@@ -1,0 +1,107 @@
+---
+title: "Lab 11: Regression diagnostics"
+author: "Tyler Scott"
+date: "2015-07-128 ![Creative Commons Attribution License](images/cc-by.png)"
+output: 
+  ioslides_presentation:
+    css: soc504_s2015_slides.css
+---
+
+## {.smaller}
+
+
+<br><br> <br> <br> <br><br> <br> <br> <br><br> <br> <br> 
+<br> <br><br> <br> <br>    
+
+This lab is adapted from work by:
+ - Andrew Bray
+ 
+Regression Diagnostics
+
+
+
+## Model diagnostics
+
+To assess whether the linear model is reliable, we need to check for (1) 
+linearity, (2) nearly normal residuals, and (3) constant variability.
+
+*Linearity*: You already checked if the relationship between runs and at-bats
+is linear using a scatterplot. We should also verify this condition with a plot 
+of the residuals vs. at-bats. Recall that any code following a *#* is intended
+to be a comment that helps understand the code but is ignored by R.
+
+```{r residuals, eval=FALSE}
+plot(m1$residuals ~ mlb11$at_bats)
+abline(h = 0, lty = 3)  # adds a horizontal dashed line at y = 0
+```
+
+6.  Is there any apparent pattern in the residuals plot? What does this indicate
+    about the linearity of the relationship between runs and at-bats?
+
+*Nearly normal residuals*: To check this condition, we can look at a histogram
+
+```{r hist-res, eval=FALSE}
+hist(m1$residuals)
+```
+
+or a normal probability plot of the residuals.
+
+```{r qq-res, eval=FALSE}
+qqnorm(m1$residuals)
+qqline(m1$residuals)  # adds diagonal line to the normal prob plot
+```
+
+7.  Based on the histogram and the normal probability plot, does the nearly 
+    normal residuals condition appear to be met?
+
+*Constant variability*:
+
+8.  Based on the plot in (1), does the constant variability condition appear to 
+    be met?
+    
+* * *
+
+
+==========
+*Authors*:
+
+The Association of Turkish Travel Agencies reports the number of foreign tourists 
+visiting Turkey and tourist spending by year. You can load in the data with the 
+following line of code.
+  
+```{r}
+tourism <- read.csv("http://math.smith.edu/~bbaumer/mth241/tourism.csv")
+```
+
+1. Plot the relationship between number of tourists and spending and describe it
+in words.
+
+2. What are the explanatory and response variables?
+
+3. Why might we want to fit a regression line to these data?
+
+4. Do the data meet the conditions required for fitting a least squares line? Use
+whatever plots are necessary.
+
+* * *
+
+Load in the `RailTrail` data set in the `mosaic` package:
+
+```{r echo = FALSE}
+require(mosaicData)
+data(RailTrail)
+```
+
+
+5. Describe the relationship between `volume` of ridership and the high temperature 
+`hightemp`.
+
+6. What are the explanatory and response variables?
+
+7. Fit a regression line using `lm()`.  What is the equation for your line?
+
+8. Examine the residual plots.  Do the conditions for regression appear reasonable?
+
+
+
+
