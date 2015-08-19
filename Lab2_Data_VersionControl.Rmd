@@ -19,7 +19,10 @@ After this lab you will be able to:
 This lab is adapted from materials by:
 
 - Matthew Salganik
+
 - Andrew Bray
+ 
+- Jeffrey Arnold (https://github.com/POLS503/pols_503_sp15)
 
 
 ## Getting started
@@ -266,8 +269,6 @@ the first command) or older than 30 (second command).
 
 
 
-
-
 ## Special values in R
 
 - `NA`: not available, missing
@@ -294,6 +295,33 @@ absent <- NA
 is.na(absent)
 ```
 
+
+## Missing Data
+
+Misssing data is particularly important
+
+```{r}
+foo <- c(1, 2, NA, 3, 4)
+```
+
+
+**Missing Data Challenge**
+
+1.  What is the result of `2 + NA`
+1.  What is the result of `mean(foo)`
+1.  Look at the documentation of `mean` to change how that function handles missing values.
+1.  How does `median(foo)` work?
+1.  `foo > 2`. Are all the entries `TRUE` and `FALSE`?
+1.  What does `is.na(foo)` do? What about `! is.na(foo)` ?
+1.  What does `foo[! is.na(foo)]` do?
+
+The function `na.omit` is particularly useful.
+It removes any row in a dataset with a missing value in *any* column.
+For example,
+```{r}
+dfrm <- data.frame(x = c(NA, 2, NA, 4), y = c(NA, NA, 7, 8))
+na.omit(dfrm)
+```
 
 ## Logical operators
 
@@ -402,6 +430,22 @@ I. Elucidating the most common data manipulation operations, so that your option
 II. Providing simple functions that correspond to the most common data manipulation verbs, so that you can easily translate your thoughts into code.
 
 III. Using efficient data storage backends, so that you spend as little time waiting for the computer as possible.
+
+
+**dplyr** provides a few core functions data manipulation.
+Most data manipulations can be done by combining these verbs together --- something which becomes even easier with the `%>%` operator.
+
+-  `filter()`: subset observations by logical conditions
+-  `slice()`: subset observations by row numbers
+-  `arrange()`: sort the data by variables
+-  `select()`: select a subset of variables
+-  `rename()`: rename variables
+-  `distinct()`: keep only distict rows
+-  `mutate()` and `transmute()`: adds new variables
+-  `group_by()`: group the data according to variables
+-  `summarise()`: summarize multiple values into a single value
+-  `sample_n()` and `sample_frac()`: select a random sample of rows
+
 
 At the outset, let's focus on single-table data. These are data that are in a single dataframe or that you might find in a csv file or Excel sheet. Install and load the "Lahman" package, which contains baseball statistical data from Sean Lahman, and load the "batting" data set included in the package. 
 
@@ -544,15 +588,181 @@ summarise(group_by(Batting,teamID),mean(HR,na.rm=T))
 
 ###chaining functions
 
-Finally, perhaps the coolest feature of dplyr is that you can daisy chain functions together. Typically, when working with data you will perform a series of operations; dplyr allows you to link these operations together without needing to generate a series of intermediate objects.
+Finally, perhaps the coolest feature of dplyr is that you can daisy chain functions together. `dplyr` imports a special function `%>%' from the **magrittr** package to do this. Typically, when working with data you will perform a series of operations; dplyr allows you to link these operations together without needing to generate a series of intermediate objects.
 
 Basically, you do this by starting with the data table (Batting in this case) and then using the "%>%" operator to link functions. Within a chain, you do not need to place the data table name within each operation function:
+
 
 ```{r chaining, eval=FALSE}
 Batting %>% filter(AB>400,yearID>1990) %>% group_by(teamID) %>% summarise(max(SB)) 
 ```
 
 11. Using the chaining technique, identify the minimum number of hits (`H`) made in a single season by a player on each team who had at least 400 at-bats (`AB`) in a single season since year 2000.
+
+
+12. Using a combination of `filter`, `select` and and `slice` show only year and homeruns of Seattle Mariners players for the first two observations (i.e., just the first two rows)
+
+# ggplot
+
+# Plotting with ggplot2
+
+We will be using the graphics package **ggplot2**, which is one of the most popular, but it is only one of several graphics packages in R.[^1]
+
+Unlike many other graphics systems, functions in **ggplot2** do not correspond to separate types of graphs.
+There are not scatterplot, histogram, or line chart functions per se.
+Instead plots are built up from component functions.
+
+1. Data
+2. Aesthetics: Maps variables in the data to visual properties: position, color, size, shape, line type ...
+3. Geometric objects: The specific shapes that are drawn: points, lines,
+4. scales: How variables values map to "computer" values.
+5. stat: summarize or transform the data. e.g. bin data and count in histogram; run a regression to get a line.
+5. facet: create mini-plots of data subsets
+
+Install and load the gapminder package, which provides an excerpt of data from Gapminder.org concerning worldwide development statistics. Don't forget to load `ggplot2` as well!
+```{r message=FALSE,warnings=FALSE,echo=FALSE}
+library("gapminder")
+library(ggplot2)
+```
+
+## Initializing a plot object
+
+```{r eval=FALSE}
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp))
+```
+This gives an error message because there is nothing to plot yet!
+
+## Storing plot object
+
+This just initializes the plot object, it is better if you assign it to an object, `p` is good enough
+```{r}
+p <- ggplot(gapminder, aes(x = gdpPercap, y = lifeExp))
+```
+
+Now we can add `geoms`
+```{r}
+p + geom_point()
+```
+
+That look okay but it would probably look be better if we log transform
+```{r}
+p_l <- ggplot(gapminder, aes(x = log10(gdpPercap), y = lifeExp))
+p_l + geom_point()
+```
+
+A better way to log transform
+```{r}
+p + geom_point() + scale_x_log10()
+```
+
+Let's make that stick
+```{r}
+p <- p + scale_x_log10()
+
+```
+
+Common workflow: gradually build up the plot you want,  re-define the object 'p' as you develop "keeper" commands. Note that in the reassigning we excluded the `geom`. Now, set the contenent variable to the aesthetic category color:
+
+```{r}
+p + geom_point(aes(color = continent))
+
+```
+
+In full detail, up to now:
+
+```{r}
+ggplot(gapminder, aes(x = gdpPercap, y = lifeExp, color = continent)) +
+  geom_point() +
+  scale_x_log10()
+```
+Let's address over-plotting: SET alpha transparency and size to a value
+```{r}
+p + geom_point(alpha = (1 / 3), size = 3)
+```
+Add now a fitted curve or line
+```{r}
+p + geom_point() + geom_smooth()
+p + geom_point() + geom_smooth(lwd = 2, se = FALSE)
+p + geom_smooth(lwd = 1, se = FALSE, method = "lm") + geom_point()
+```
+That's great but I actually want to revive our interest in continents!
+```{r}
+p + aes(color = continent) + geom_point() + geom_smooth(lwd = 3, se = FALSE)
+```
+Facetting: another way to exploit a factor
+```{r}
+p + geom_point(alpha = (1 / 3), size = 3) + facet_wrap(~ continent)
+```
+Still want lines? Let's add them
+```{r}
+p + geom_point(alpha = (1 / 3), size = 3) + facet_wrap(~ continent) +
+  geom_smooth(lwd = 2, se = FALSE)
+```
+
+**Challenge**
+
+* plot lifeExp against year
+* make mini-plots, split out by continent
+* add a fitted smooth and/or linear regression, w/ or w/o faceting
+
+```{r}
+# plot lifeExp against year
+# y <- ggplot(gDat, aes(x = year, y = lifeExp)) + geom_point()
+
+# make mini-plots, split out by continent
+# y + facet_wrap(~ continent)
+
+# add a fitted smooth and/or linear regression, w/ or w/o facetting
+#y + geom_smooth(se = FALSE, lwd = 2) +
+#  geom_smooth(se = FALSE, method ="lm", color = "orange", lwd = 2)
+
+# y + geom_smooth(se = FALSE, lwd = 2) +
+#  facet_wrap(~ continent)
+```
+
+What if I am only interrested in the US?
+```{r}
+ggplot(filter(gapminder, country == "United States"),
+       aes(x = year, y = lifeExp)) +
+  geom_line() +
+  geom_point()
+
+```
+
+Let just look at five countries
+
+```{r}
+some_countries <- c("United States", "Canada", "Rwanda", "Cambodia", "Mexico")
+ggplot(filter(gapminder, country %in% some_countries),
+       aes(x = year, y = lifeExp, color = country)) +
+  geom_line() +
+  geom_point()
+```
+
+
+So what's up with Mexico?
+
+* Nafta? Higher GDP?
+
+Not really...
+```{r}
+ggplot(subset(gapminder, country %in% some_countries),
+       aes(x = year, y = lifeExp, color = country)) +
+  geom_line() +
+  geom_point(aes(size=gdpPercap))
+```
+
+You can change the way the plot looks overall using `theme`
+
+```{r}
+ggplot(subset(gapminder, country %in% some_countries),
+       aes(x = year, y = lifeExp, color = country)) +
+  geom_line() +
+  geom_point(aes(size=gdpPercap)) +
+  theme_minimal()
+```
+
+In addition to the themes included with ggplot, several other themes are available in the [ggthemes](http://cran.r-project.org/web/packages/ggthemes/index.html) package.
 
 
 #Version Control

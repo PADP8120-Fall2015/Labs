@@ -10,15 +10,15 @@ output:
 #Goals:
 
 After this lab you will be able to:
+ - Perform basic operations using R from RStudio
+ - Load data into R
+ - Produce an R Markdoiwn report
 
 ## 
 
 This lab is adapted from materials by:
 
 - Open Intro
-- Andrew Bray
-
-
 
 ## Introduction
 
@@ -477,7 +477,11 @@ Once you have chosen to open a new R Markdown file, in the interface that pops u
 
 Your new markdown file will open up--you will notice that it contains a template that you can use as a guide for making your own .Rmd document. Notice that the file name is still "Untitled1"; the name you designated when you generated a new file is the title that will show up at the top of your markdown document, but it is not a formal file name. Click "save" and save/title your new file. The document you're looking at should look something like this:
 
+***
+
 ![rmarkdown_template](more/RMarkdown_template.png)
+
+***
 
 Basically, R Markdown is intended to allow you to format content professionally without using HTML or LaTeX. The darker grey areas show code chunks; standard text is shown on the white background. When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
 
@@ -639,4 +643,3 @@ These data come from a report by the Centers for Disease Control
 
 That was a short introduction to R, RStudio, and R Markdown, but we will provide you with more functions and a more complete sense of the language as the course progresses. To exit RStudio you can click the *x* in the upper right corner of the whole window.  You will be prompted to save your workspace. If you click *save*, RStudio will save the history of your commands and all the objects in your workspace as an .RData file so that the next time you launch RStudio, you will see `arbuthnot` and you will have access to the commands you typed in your previous session.
 
-*This lab is adapted from Andrew Bray's openintro statistics lab (https://github.com/andrewpbray)

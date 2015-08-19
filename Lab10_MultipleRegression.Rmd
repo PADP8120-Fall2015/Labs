@@ -15,18 +15,27 @@ widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
 
 - Multiple regression
 - Regression planes
+- Multicollinearity
 
 ##Goals:
 
 After this lab you will be able to:
+
 - fit and select multiple regression models
+
 - identify best-fit models
+
 - interpret coefficients and make predictions us9ing multiple regression models
+
+- test for multicollinearity and possible effects
 
 ## 
 This lab uses materials by 
+
 - Andrew Bray
+
 - Andrew Bray and Mine Cetinkaya-Rundel
+
 - Matthew Salganik
 
 ## Example: Grading the professor
@@ -243,7 +252,6 @@ a good job at:
 2. Description
 
 
-
 # Selecting covariates
 
 ## Searching the model space 
@@ -326,6 +334,47 @@ summary(m2)$coef
 summary(m3)$coef
 ```
 
+## F-tests for comparison
+
+Two nested models may be compared using the anova() function. The anova()
+command computes analysis of variance (or deviance) tables. When given one
+model as an argument, it displays the ANOVA table. When two (or more)
+nested models are given, it calculates the differences between them. 
+
+```{r message=FALSE,warnings=FALSE}
+anova(m2,m3)
+```
+
+You can also conduct a joint test of significance for all model parameters. The f-statistic  shown in the model summary output is the result of a test comparing your model to the completely restricted intercept-only model. In other words, this tests whether all non-intercept model parameters are equal to zero. If you reject this hypothesis, it **does not** mean that all variables are significant; rather, it means that **at least one parameter is not equal to zero**
+
+```{r message=FALSE,warnings=FALSE}
+summary(m2)
+```
+
+
+The function `drop1()` computes a table of changes in fit for each term in the named
+linear model object.
+
+```{r message=FALSE,warnings=FALSE}
+drop1(m3)
+```
+
+## log-likelihood
+
+You can also compare models using the log-likelihood; AIC and BIC scores are based upon the log-likelihood. The formula for AIC is:
+
+$$ AIC = -2 * logLikelihood + 2 * npar$$
+
+and for BIC:
+
+$$ BIC = -2 * loglikelihood + log(n) * npar$$
+
+*Note that BIC differs from AIC in that it accounts for the total number of observations.
+
+```{r message=FALSE,warnings=FALSE}
+logLik(m2)*-2 + 2 * length(m2$terms) # this...
+AIC(m2) # should equal this...
+```
 
 ## Comparing best models
 
@@ -336,10 +385,9 @@ is preferred because of the statistical significance of the predictors.
 should be much higher.  That is, we need very low p-values to be convinced of
 statistical significance*.
 
-
 ## Backward elimination
 
-```{r}
+```{r eval=FALSE}
 backAIC <- step(m5, direction = "backward", data = bridge)
 backBIC <- step(m5, direction = "backward", data = bridge, k = log(nrow(bridge)))
 ```
@@ -347,7 +395,7 @@ backBIC <- step(m5, direction = "backward", data = bridge, k = log(nrow(bridge))
 
 ## Forward selection
 
-```{r}
+```{r eval=FALSE}
 mint <- lm(log(Time) ~ 1, data = bridge)
 forwardAIC <- step(mint,
                    scope = list(lower = ~1, upper = ~log(DArea) + log(CCost) + 
@@ -382,7 +430,6 @@ proportion of students that filled out evaluations, class size, course level,
 number of professors, number of credits, average beauty rating, outfit, and 
 picture color.
 
-##
 10. Which variable would you expect to have the highest p-value in this model? 
     Why? *Hint:* Think about which variable would you expect to not have any 
     association with the professor score.
@@ -402,37 +449,35 @@ summary(m_full)
 
 13. Interpret the coefficient associated with the ethnicity variable.
 
-##
 14. Drop the variable with the highest p-value and re-fit the model. Did the
     coefficients and significance of the other explanatory variables change?
     (One of the things that makes multiple regression interesting is that
     coefficient estimates depend on the other variables that are included in
     the model.) If not, what does this say about whether or not the dropped
     variable was collinear with the other explanatory variables?
+    
+15. Conduct an F-test comparing the two models from problem 14 (i.e., the unrestricted model and the one where you dropped the variable with the highest p-value). Report your results in a complete sentence. 
 
-15. Using backward-selection and p-value as the selection criterion,
-    determine the best model. You do not need to show all steps in your
-    answer, just the output for the final model. Also, write out the linear
+16. Using backward-selection and p-value as the selection criterion,
+    determine the best model. Write out the linear
     model for predicting score based on the final model you settle on.
 
-16. Verify that the conditions for this model are reasonable using diagnostic 
+17. Verify that the conditions for this model are reasonable using diagnostic 
     plots.
 
-17. The original paper describes how these data were gathered by taking a
+18. The original paper describes how these data were gathered by taking a
     sample of professors from the University of Texas at Austin and including 
     all courses that they have taught. Considering that each row represents a 
     course, could this new information have an impact on any of the conditions 
     of linear regression?
 
-18. Based on your final model, describe the characteristics of a professor and 
+19. Based on your final model, describe the characteristics of a professor and 
     course at University of Texas at Austin that would be associated with a high
     evaluation score.
 
-19. Would you be comfortable generalizing your conclusions to apply to professors
+20. Would you be comfortable generalizing your conclusions to apply to professors
     generally (at any university)? Why or why not?
 
- 
- 
  
 # Regression Planes
 
@@ -524,7 +569,7 @@ As with the line, it is well defined that this is the best fit plane to the whol
 
 Thankfully, prediction with multiple regression is basically the same as prediction in bivariate regression, albeit with more algebra involved. Because there can be many terms involved, you are better off using R's `predict` function instead of manual calculation.
 
-20. What is the predicted income for someone whose father has 12 years of education and who has 12 years of education? If we just use `predict(my.lm)` R will give you the fitted value for each observation. In order to make a prediction for this new observation, we need to make a new dataframe:
+21. What is the predicted income for someone whose father has 12 years of education and who has 12 years of education? If we just use `predict(my.lm)` R will give you the fitted value for each observation. In order to make a prediction for this new observation, we need to make a new dataframe:
 
 
 ```{r}
@@ -533,7 +578,77 @@ new.observation = data.frame('paeduc' = 12,'educ'=12)
 predict.lm(my.lm,newdata = new.observation)
 ```
 
-21. What is the predicted income for someone whose father has 20 years of education and who has 0 years of education?
+22. What is the predicted income for someone whose father has 20 years of education and who has 0 years of education?
+
+# Multicollinearity
+
+
+### Example: Car seat position
+
+<img src="http://www.oneshift.com/articles/uploads/large-news_4825.jpg" height="400px" width="600px" />
+
+
+```{r, message=FALSE, error=FALSE}
+library(faraway)
+data(seatpos)
+head(seatpos)
+```
+
+We'll model hipcenter as a function of all other variables in the dataset...
+
+```{r}
+m1 <- lm(hipcenter ~ ., data = seatpos)
+# the dot in the formula notation means 'all other variables'
+summary(m1)$coef
+```
+
+## Assessing multicollinearity
+
+We have several tools at our disposal to assess multicollinearity
+
+- **Pairs plot**: look for strong linear relationships between predictors.
+- **Correlation matrix**: calculate the correlation between your predictors
+using `cor()`.
+- **Variance Inflation Factors (VIF)**:
+
+## Pairs plot
+
+```{r, echo=FALSE, fig.align='center', fig.height=6.5, fig.width=6.5}
+pairs(hipcenter ~ ., data = seatpos)
+```
+
+## Correlation matrix
+
+```{r}
+round(cor(seatpos),2)
+```
+
+Correlations above 0.7 will often induce considerable variance in your slopes.
+
+## Variance Inflation Factor 
+
+```{r}
+library(car)
+m1 <- lm(hipcenter ~ ., data = seatpos)
+vif(m1)
+
+```
+
+Rule of thumb: VIFs greater than 5 should be addressed.
+
+
+## Simplifying seatpos
+
+Since most of these variables measure some version of height, we can just use
+one of them.
+
+```{r}
+m2 <- lm(hipcenter ~ Age + Weight + Ht, data = seatpos)
+summary(m2)
+vif(m2)
+```
+
+23. Go back to the professor rating data - assess any potential multicollinearity amongst variables and examine the VIFs. 
 
 # Goal check?
 

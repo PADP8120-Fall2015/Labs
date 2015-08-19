@@ -1,0 +1,468 @@
+
+---
+title: "PADP8120_Lab12: Matrices and Maximum Likelihood"
+author: "Tyler Scott"
+date: "2015-08-16 ![Creative Commons Attribution License](images/cc-by.png)"
+output:
+  html_document:
+    highlight: pygments
+    theme: cerulean
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
+---
+
+
+# Lab Topics
+
+- Matrix-based regression
+
+- Maximum likelihood estimators
+
+##Goals:
+
+After this lab you will be able to:
+
+
+## 
+This lab uses materials by 
+
+- Andrew Bray
+
+- Matthew Salganik
+
+- Chris Adolph
+
+- Trey Collier (http://www.exegetic.biz/blog/2013/08/fitting-a-model-by-maximum-likelihood/)
+
+- 
+
+# Matrices in R 
+
+Let's review matrix operations in R...
+
+## Generating a matrix in R
+
+```{r}
+A <- matrix(c(2, -4, 5, 3, -1, -3), nrow = 2)
+A
+```
+
+- The first argument is a vector of numbers.
+- You also need to specify `nrow` or `ncol`.
+- By default, `byrow = FALSE`, so it will spool the numbers down the columns
+first.
+- Can also change a dataframe into a matrix directly with `as.matrix()`.
+
+1. Produce the following as a matrix object:
+
+|  1 | 7 | 10 |
+|  3 | 8 | 4 |
+|  5 | 9 | 4 |  
+
+## Matrix multiplication 
+
+```{r}
+B <- matrix(c(2, 1, 0, 0, 1, 4), nrow = 3)
+# A * B
+C <- A %*% B
+```
+
+- The `*` operator will do element-wise multiplication.
+- Use `%*%` for matrix multiplication (inner product).
+
+## Other operations 
+
+*Transpose*: `t()`
+
+```{r}
+C
+t(C)
+```
+
+
+## Other operations
+
+*Inverse*: `solve()`
+
+```{r}
+solve(C)
+C %*% solve(C)
+```
+
+
+$\begin{bmatrix} 
+3 & 1 \\ 
+2 & 1 \\ 
+1 & 0 \\
+\end{bmatrix}$
+$\begin{bmatrix}
+1 & 0 & 2 \\ 
+-1 & 3 & 1\\
+\end{bmatrix}$
+
+2. What size is the first matrix?
+
+3. What size is the second matrix?
+
+4. Can they multiplied together?  If so, what will be the size of the result.
+
+5. Calculate the result.
+
+
+# Matrixes and linear regression
+
+As we showed in lecture, a linear regression can be expressed a matrix algebra operation:
+
+If our regression equation was...
+
+$Y_i = \beta_0 + \beta_1 X_{i1} + \beta_2 X_{i2} + \beta_3 X_{i3} + \epsilon_i$
+
+For 5 people this would be...
+
+$y_1 = \beta_0 + \beta_1 x_{11} + \beta_2 x_{12} + \beta_3 x_{13} + \epsilon_1$
+
+$y_2 = \beta_0 + \beta_1 x_{21} + \beta_2 x_{22} + \beta_3 x_{23} + \epsilon_2$
+
+$y_3 = \beta_0 + \beta_1 x_{31} + \beta_2 x_{32} + \beta_3 x_{33} + \epsilon_3$
+
+$y_4 = \beta_0 + \beta_1 x_{41} + \beta_2 x_{42} + \beta_3 x_{43} + \epsilon_4$
+
+$y_5 = \beta_0 + \beta_1 x_{51} + \beta_2 x_{52} + \beta_3 x_{53} + \epsilon_5$
+
+Which can then be repackaged as:
+
+$\begin{bmatrix} y_1 \\ y_2 \\ y_3 \\ y_4 \\ y_5 \end{bmatrix}$ = 
+$\begin{bmatrix} 
+ 1 & x_{11} & x_{12} & x_{13} \\
+ 1 & x_{21} & x_{22} & x_{23} \\
+ 1 & x_{31} & x_{32} & x_{33} \\
+ 1 & x_{41} & x_{42} & x_{43} \\
+ 1 & x_{51} & x_{52} & x_{53} \\
+\end{bmatrix}$
+$\begin{bmatrix} \beta_0 \\ \beta_1 \\ \beta_2 \\ \beta_3 \end{bmatrix}$ +
+$\begin{bmatrix} \epsilon_1 \\ \epsilon_2 \\ \epsilon_3 \\ \epsilon_4 \\ \epsilon_5 \end{bmatrix}$
+
+$y_1 = \beta_0 + \beta_1 x_{11} + \beta_2 x_{12} + \beta_3 x_{13} + \epsilon_1$
+
+$y_2 = \beta_0 + \beta_1 x_{21} + \beta_2 x_{22} + \beta_3 x_{23} + \epsilon_2$
+
+$y_3 = \beta_0 + \beta_1 x_{31} + \beta_2 x_{32} + \beta_3 x_{33} + \epsilon_3$
+
+$y_4 = \beta_0 + \beta_1 x_{41} + \beta_2 x_{42} + \beta_3 x_{43} + \epsilon_4$
+
+$y_5 = \beta_0 + \beta_1 x_{51} + \beta_2 x_{52} + \beta_3 x_{53} + \epsilon_5$
+
+
+## Goal of matrix regression
+
+1. Our model is: $\mathbf{Y} = \mathbf{X} \mathbf{\beta} + \mathbf{\epsilon}$
+
+2. We want to find $\mathbf{b}$ that minimizes the residual sum of squares
+
+3. This is given by: $\mathbf{b} = \mathbf{(X'X)^{-1}X'y}$
+
+## How does this work?
+
+Let's try it out. Load our old friend the `gapminder` package and fit a model that regresses life expetancy on GDP per capite (`lifeExp`~`gdpPercap`) **only** for the 2007 data:
+
+```{r eval=TRUE,message=FALSE,warnings=FALSE}
+library(gapminder);library(dplyr)
+gapdata <- gapminder %>% filter(year==2007)
+gapmod = lm(lifeExp~gdpPercap,data=gapdata)
+summary(gapmod)
+```
+
+Now, we'll find that same coefficient (`r gapmod$coef[2]`) via the matrix approach...
+
+The question ($\mathbf{b} = \mathbf{(X'X)^{-1}X'y}$) first shows that we need to take the transpose of X ($X'$). In this case, `X` (the design matrix) is simply a two-column matrix with a constant 1 (since we will fit the a constant intercept) and the value of `gdpPercap` for each country:
+
+```{r}
+X = cbind(1,gapdata$gdpPercap)
+head(X)
+```
+
+We then transpose X with the `t()` function:
+
+```{r}
+transX = t(X)
+dim(transX)
+```
+
+To take the inverse, we simply need to find the inverse of the product of `X` and `X'`. Note that this **does not** mean to simply set the product to the -1 power. Instead, we need the R function `solve` which will find the inverse of the matrix. Also, remember that for matrix multiplication in R, you have to use the `%*%` operator:
+
+```{r}
+solve(transX %*% X)
+```
+
+... then multiply the resulting matrix by `X'` and `y`:
+
+```{r}
+solve(transX %*% X) %*% transX %*% gapdata$lifeExp
+```
+
+Which should produce an identical set of coefficients as the original linear model:
+
+```{r}
+summary(gapmod)
+```
+
+6. Load the Duncan's occupational prestige dataset (`Duncan.txt`) and conduct a matrix-based regression for `income ~ education + presige`.
+
+```{r}
+prestige = read.table('input/Duncan.txt')
+```
+
+7. Compare your results to the `lm` output version.
+
+
+# Maximum Likelihood Estimation
+
+Step 1. Express the joint probability of the data,
+using the chosen probability distribution
+
+Step 2. Convert the joint probability to the likelihood
+(trivial, as they are proportional)
+
+Step 3. Simplify the likelihood for easy maximization
+(take logs and reduce to “sufficient statistics”)
+
+Step 4. Substitute in the systematic component
+
+Now we have something easy to maximize, and will be able to estimate the parameters given the data
+
+## MLE Example
+
+Here is some fake, normally distributed data:
+```{r}
+x <- c(85,84,75,93,88,82,85,94,86,76,81,98,95,82,76,91,81,82,72,94)
+```
+
+Assume that you want to model these data as coming from a gaussian random process.
+That is, there is some unknown mean $\mu$ and variance $\sigma^2$ Thus our model has two unknown parameters.
+
+Obviously, there is a really easy way to solve these:
+
+$$ \mu = \frac{1}{N}\sum^{N}_{i=1} x_i $$
+
+and...
+
+$$ \hat{\sigma} = \frac{1}{N} \sum^{N}_{i=1} (x_i - \hat{\mu})^2$$
+
+... but let's pretend like there is not!
+
+## What's the point? 
+
+The point of MLE is to show that as long as you have a forward model of the probability of the data given a guess at the parameter(s), you can use an optimizer to find the parameter value(s) that maximize the likelihood (minimize the negative log-likelihood, which you might recall showing up in `summary.lm` objects) of the data given the parameter(s).
+
+The following function computes the NLL of the data $x$ given our guesses of $\mu$ and $\sigma^2$:
+
+```{r}
+NLL <- function(theta,data) {
+mu = theta[1]
+sigma = theta[2]
+n = length(data)
+NLL = -(n/2)*log(2*pi) - (n/2)*log(sigma**2)
+tmp = 0
+for (i in 1:n) {
+tmp = tmp + (data[i]-mu)**2
+}
+NLL = NLL + -(1/(2*(sigma**2)))*tmp
+ -NLL
+}
+```
+
+You can refer to the lecture notes to see the Greek equation version of this function. R has a built-in optimizer function that will take: (a) a vector of parameters guesses we feed in; and (b) the `NLL` function we just built; and (c) the data:
+
+```{r}
+test.vector = c(100,10) #guess values for mu and sigma^2
+outp = optim(par = test.vector,fn = NLL, data = x)
+outp$par
+```
+
+What comes out is the best parameter estimates. You have to feed in starting values, but then the `optim` function takes it from there and gives you the optimal parameter estimates. 
+
+8. Repeat the operation above but start with a different set of guesses. Do you get the same result?
+
+9. What about some really bad guesses (e.g., `c(10000,300)`)? Does `optim` still get there?
+
+
+## MLE and Regression
+
+As you have seen, MLE bascially inverts the question we have been asking all semester, now saying: what model parameters are most likely to characterise a given set of data? Now let's try something a little more sophisticated: fitting a linear model. As before, we generate some data. 
+
+```{r}
+set.seed(24)
+N <- 100
+x <- runif(N)
+y <- 5 * x + 3 + rnorm(N)
+```
+
+We can immediately fit this model using least squares regression.
+
+```{r}
+fit <- lm(y ~ x)
+summary(fit)
+```
+
+But that's not all that fun. 
+```{r}
+plot(x, y)
+abline(fit, col = "red")
+```
+
+## Likelihood function for linear regression
+
+As before, we need a likelihood function. The model is not a PDF (probability density function), so we can't proceed in precisely the same way that we did with the normal distribution. However, if you fit a linear model then you want the residuals to be normally distributed. So the likelihood function fits a normal distribution to the residuals.
+
+```{r}
+regLL <- function(params, data) {
+    # Find residuals
+    #
+    R = data$y - data$x * params[['beta1']] - params[['beta0']]
+    #
+    # Calculate the likelihood for the residuals (with mu and sigma as parameters)
+    #
+    R = suppressWarnings(dnorm(R, params[['mu']], params[['sigma']]))
+    #
+    # Sum the log likelihoods for all of the data points
+    #
+    -sum(log(R))
+}
+
+```
+
+
+Next we fit the model. 
+
+```{r}
+start.values = list(beta0 = 3, beta1 = 1, mu = 0, sigma=1)
+mle.estimate = optim(par = start.values,fn = regLL,data = data.frame(cbind(x,y)))
+mle.estimate
+```
+
+How does this compare to the `lm` result?
+
+```{r}
+ols.estimate = lm(y~x)
+summary(ols.estimate)
+```
+
+Looks like we did good!
+
+
+## Another synthetic example
+
+How smooth should our model be?
+
+```{r, echo=TRUE, fig.align='center', fig.width=6, fig.height=5}
+betas <- c(0, 1, 1, -4, 1)
+sigma <- 5
+n <- 40
+set.seed(110)
+x <- runif(n, 0, 5)
+EyGx <- betas[1] + betas[2]*x + betas[3]*x^2 + betas[4]*x^3 + betas[5]*x^4
+y <- EyGx + rnorm(n, 0, sigma)
+plot(y ~ x, pch = 16, col = "steelblue")
+```
+
+
+## Four candidates {.build}
+
+```{r}
+m1 <- lm(y ~ x)
+m2 <- lm(y ~ x + I(x^2))
+m3 <- lm(y ~ x + I(x^2) + I(x^3))
+m4 <- lm(y ~ x + I(x^2) + I(x^3) + I(x^4))
+```
+
+
+## Four candidates
+
+```{r, echo=FALSE}
+# plotting function
+plot_m <- function(x, y, m) {
+  plot(y ~ x, pch = 16, col = "steelblue")
+  x_range <- par("xaxp")[1:2]
+  xx <- seq(x_range[1], x_range[2], length.out = 300)
+  yy <- predict(m, newdata = data.frame("x" = xx))
+  lines(xx, yy, lwd = 2, col = "orange")
+}
+```
+
+```{r, echo=FALSE, fig.align='center', fig.width=8, fig.height=6}
+par(mfrow = c(2, 2))
+plot_m(x, y, m1)
+plot_m(x, y, m2)
+plot_m(x, y, m3)
+plot_m(x, y, m4)
+```
+
+
+## Likelihood
+
+**Def:** the joint probability (actually: density) of all of the data given a 
+particular model.  If our $Y$s are independent of each other given the $X$, then:
+
+\[ P(Y_. | X_.) = P(y_1 | x_1) P(y_2 | x_2) \ldots P(y_n | x_n) \]
+
+```{r}
+L1 <- prod(dnorm(m1$res, mean = 0, sd = summary(m1)$sigma))
+```
+
+
+## Comparing Likelihoods {.build}
+
+```{r}
+L1 <- prod(dnorm(m1$res, mean = 0, sd = summary(m1)$sigma))
+L2 <- prod(dnorm(m2$res, mean = 0, sd = summary(m2)$sigma))
+L3 <- prod(dnorm(m3$res, mean = 0, sd = summary(m3)$sigma))
+L4 <- prod(dnorm(m4$res, mean = 0, sd = summary(m4)$sigma))
+c(L1, L2, L3, L4)
+```
+
+The observed data is most probable under the model with a quartic term.  So
+that's the best model, right?
+
+
+## The BEST model!
+
+```{r, echo=FALSE, fig.align='center', fig.width=6, fig.height=5}
+mBEST <- lm(y ~ poly(x, 20))
+plot_m(x, y, mBEST)
+```
+
+
+## The BEST model!
+
+```{r}
+mBEST <- lm(y ~ poly(x, 20))
+LBEST <- prod(dnorm(mBEST$res, mean = 0, sd = summary(mBEST)$sigma))
+c(L1, L2, L3, L4, LBEST)
+```
+
+But surely that's not the best model...
+
+## Criteria compared
+
+```{r, echo=FALSE}
+m5 <- lm(y ~ x + I(x^2) + I(x^3) + I(x^4) + I(x^5))
+m6 <- lm(y ~ x + I(x^2) + I(x^3) + I(x^4) + I(x^5) + I(x^6))
+m7 <- lm(y ~ x + I(x^2) + I(x^3) + I(x^4) + I(x^5) + I(x^6) + I(x^7))
+models <- list(m1, m2, m3, m4, m5, m6, m7) # models in ascending order
+plot_ics <- function(model_list) {
+  AICs <- unlist(lapply(model_list, extractAIC))[seq(2, length(model_list) * 2, 2)]
+  BICs <- unlist(lapply(model_list, extractAIC, k = log(length(models[[1]]$res))))[seq(2, length(model_list) * 2, 2)]
+  plot(c(1, length(AICs)), range(c(AICs, BICs)), ylab = "IC value",
+       xlab = "# of predictors", type = "n")
+  points(1:length(AICs), AICs, col = "green")
+  lines(1:length(AICs), AICs, lty = 3, lwd = 2, col = "green")
+  points(1:length(BICs), BICs, col = "red")
+  lines(1:length(BICs), BICs, lty = 3, lwd = 2, col = "red")
+  legend("topright", legend = c("AIC", "BIC"), col = c("green", "red"), pch = 16, bty = "n")
+}
+plot_ics(models)
+```
+
+
+# Goal check?
+
+# Questions?
