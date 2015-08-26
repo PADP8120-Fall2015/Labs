@@ -9,9 +9,13 @@ output:
 #Goals:
 
 After this lab you will be able to:
+
 - manipulate data using base R functions and the `dplyr` package
+
 - use five main git operations: init, add, commit, push, pull 
+
 - start a project with RStudio and keep it under version control with git
+
 - submit your homework with git and github
 
 ## 
@@ -771,7 +775,7 @@ In addition to the themes included with ggplot, several other themes are availab
 
 Live demo
 
-## start a project and keep it under version control
+##
 
 Questions?
 

@@ -173,11 +173,10 @@ Scalars are just vectors of length one.
 
 ## Dataframe: nc
 
-![baby](http://smashinghub.com/wp-content/uploads/2013/01/BP-33.jpg)
-
 ```{r}
-download.file("http://www.openintro.org/stat/data/nc.RData", destfile = "nc.RData")
-load("nc.RData")
+#download.file("http://www.openintro.org/stat/data/nc.RData", destfile = "nc.RData")
+#load("nc.RData")
+nc <- read.csv('input/nc.csv')
 ```
 
 - What are the dimensions?
@@ -459,9 +458,9 @@ So far, you have learned about how to work with R using R Studio. For the next p
 
 In this class, we will use R Markdown = R + Markdown. This is the format in which your homeworks MUST be turned in. 
 
-![Comparing traditional model and R Markdown](more/baumer_R_2014_fig4.png)
+#![Comparing traditional model and R Markdown](more/baumer_R_2014_fig4.png)
 
-[Baumer et al (2014)](http://arxiv.org/abs/1402.1894)
+#[Baumer et al (2014)](http://arxiv.org/abs/1402.1894)
 
 R Markdown uses source - output paradigm (not WYSIWYG)
 

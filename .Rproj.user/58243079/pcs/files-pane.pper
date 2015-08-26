@@ -2,6 +2,10 @@
     "path" : "~/Google Drive/Webpage/teaching/PADP8120_Fall2015/Labs",
     "sortOrder" : [
         {
+            "ascending" : false,
+            "columnIndex" : 3
+        },
+        {
             "ascending" : true,
             "columnIndex" : 2
         }
