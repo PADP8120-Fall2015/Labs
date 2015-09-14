@@ -79,6 +79,18 @@ print(i)
 
 1. Write a simple loop that draws 10 different values from the `t` distribution (hint: `rt()`)
 
+```{r}
+fill.vector = NA #make object to store the random values I draw
+df.value = 30 #t-distribution requires a df value, since width of distribution (how heavy tails are) is determined by df
+
+# loop through values 1:10, draw 1 random value from t-dist with df = 30, assign to ith spot in the fill.vector object
+for (i in 1:10)
+{
+  fill.vector[i] = rt(1,df=df.value)
+}
+print(fill.vector)
+```
+
 
 ## if and if else statements
 
@@ -122,6 +134,8 @@ if(x < 0) print("Hi!")
 
 2. Why doesn't this work?
 
+This does not work because `x` is an object that contains three numbers (1, -2, and 3). Thus, when we ask R to evaluate the question, "Is X < 0?", R doesn't know what to do since there isn't just one answer. 
+
 ```{r eval=FALSE}
 x <- c(-1, 2, -3)
 if(x < 0) print("Hi!")
@@ -129,7 +143,23 @@ if(x < 0) print("Hi!")
 
 3. What about this error? What R does in this situation is use only the first condition value and a warning is issued.
 
+This is actually the same error; the difference is, in the prior example, when R tries to evaluate "Is x < 0?", the first number it queries produces a FALSE response (since 1 is not less than 0). Since the response is FALSE, R does not print "hi". Then, R realizes that x contains two more values, and gives an error. In the latter example, the answer to the first value (i.e., x[1]) is TRUE, so R prints "hi", and then chokes when it realizes that there are two more values associated with x. 
+
 4. Write an `if` `else` loop that takes 10 random samples from the standard normal distribution (hint: `rnorm()`), and print the character string "positive" if the sampled value is greater than 0 and "negative" if the sampled value is less than 0.
+
+```{r}
+for (i in 1:10)
+{
+  if (rnorm(1)>0) {print('positive')}
+  else {print('negative')}
+}
+```
+
+Note that we could also do this another way, by having R generate 10 random samples and then using the `ifelse` function as a shortcut. The `ifelse` function takes three inputs: (1) the object to iterate over; (2) what do if the condition is TRUE for a given iteraction; and (3) what to do if the condition is FALSE for a given iteration. Note that here we won't need to specify the `print` function, because `ifelse` returns the specified value based upon the TRUE/FALSE evaluation. 
+
+```{r}
+ifelse(rnorm(10)>0,'positive','negative')
+```
 
 ### Breaking a loop 
 
@@ -146,6 +176,13 @@ i
 
 5. Write a loop that draws ten values from a uniform distribution between 0 and 10, and "breaks" when a value is drawn that is greater than 8. 
 
+```{r eval=FALSE}
+for(i in 1:10) {
+  print(i)
+  if(runif(n=1,min=0,max=10)>8) break
+}
+```
+
 ### "Nexting" a loop 
 
 Alternatively we may wish to sometimes just skip to the next iteration of the loop in which case we would want to use the next command:
@@ -158,6 +195,16 @@ print(i)
 ```
 
 6. Write a loop that uses a `next` command to skip something (of your choice).
+
+```{r}
+color.list <- c('red','blue','green','yellow')
+for (i in color.list)
+{
+  if (i == 'green') next
+  print(i)
+}
+```
+
 
 # Normal Distribution
 
@@ -190,8 +237,23 @@ mdims <- subset(bdims, sex == 1)
 fdims <- subset(bdims, sex == 0)
 ```
 
-7.  Make a histogram (`hist()`) of men's heights and a histogram of women's heights.  How 
-    would you compare the various aspects of the two distributions?
+7.  Make a histogram (`hist()`) of men's heights and a histogram of women's heights.  How would you compare the various aspects of the two distributions?
+
+```{r}
+hist(mdims$hgt)
+```
+
+```{r}
+hist(fdims$hgt)
+```
+
+Note that ggplot has a quick way to perform the above operations without prior subsetting:
+```{r message=FALSE,warning=FALSE}
+library(ggplot2)
+ggplot(bdims, aes(x=hgt)) + geom_histogram(binwidth=5)+ facet_wrap(~sex)
+```
+
+In any case, both distributions are approximately a normal distribution. As we might epect, the average male height is a bit taller.
 
 ## The normal distribution
 
@@ -237,6 +299,7 @@ the histogram function: `ylim = c(0, 0.06)`.
 8.  Based on the this plot, does it appear that the data follow a nearly normal 
     distribution?
 
+Yes, as we thought before, when we print a normal curve on top of the histogram, it's clear that the height distribution is nearly normal. 
 
 ## Evaluating the normal distribution
 
@@ -246,7 +309,7 @@ close the histogram is to the curve. An alternative approach involves
 constructing a normal probability plot, also called a normal Q-Q plot for 
 "quantile-quantile".
 
-```{r qq, eval=FALSE}
+```{r eval=FALSE}
 qqnorm(fdims$hgt)
 qqline(fdims$hgt)
 ```
@@ -277,17 +340,25 @@ as well as its normal probability plot.
     the line?  How does this plot compare to the probability plot for the real 
     data?
 
-Even better than comparing the original plot to a single plot generated from a 
-normal distribution is to compare it to many more plots using the following 
+```{r qq, eval=FALSE}
+qqnorm(sim_norm)
+qqline(sim_norm)
+```
+
+As we might expect, the simulated data fit the qqline a little more perfectly, which makes sense since these values were drawn from a normal distribution. 
+
+
+Even better than comparing the original plot to a single plot generated from a normal distribution is to compare it to many more plots using the following 
 function. It may be helpful to click the zoom button in the plot window.
 
 ```{r qqnormsim, eval=FALSE}
 qqnormsim(fdims$hgt)
 ```
 
-10.  Does the normal probability plot for `fdims$hgt` look similar to the plots 
-    created for the simulated data?  That is, do plots provide evidence that the
-    female heights are nearly normal?
+10.  Does the normal probability plot for `fdims$hgt` look similar to the plots created for the simulated data?  That is, do plots provide evidence that the female heights are nearly normal?
+
+Actually, yeah it does. In fact, it's basically impossible to tell the difference between the qq plot of the female height data and the plots for simulated data. This is pretty convincing evidence of normality, because it indicates that even a perfectly normal distribution will have about as much sampling variability as we see in the actual data. 
+
 
 11.  Using the same technique, determine whether or not female weights appear to 
     come from a normal distribution.
@@ -314,6 +385,10 @@ download.file("http://www.openintro.org/stat/data/ames.RData", destfile = "ames.
 load("ames.RData")
 ```
 
+```{r eval=TRUE,message=FALSE,results='hide'}
+load('input/ames.RData')
+```
+
 We see that there are quite a few variables in the data set, enough to do a 
 very in-depth analysis.  For this lab, we'll restrict our attention to just 
 two of the variables: the above ground living area of the house in square feet 
@@ -321,7 +396,7 @@ two of the variables: the above ground living area of the house in square feet
 throughout the lab, create two variables with short names that represent these 
 two variables.  
 
-```{r assign, eval=FALSE}
+```{r assign, eval=TRUE}
 area <- ames$Gr.Liv.Area
 price <- ames$SalePrice
 ```
@@ -336,6 +411,13 @@ hist(area)
 
 12.  Describe this population distribution.
 
+```{r eval=TRUE}
+summary(area)
+hist(area)
+```
+
+These data look fairly normal as well. However, there appears to be a slight rightward skew - this makes sense, since houses cannot have LESS than 0 square feet, but someone can certainly have a huge mansion that has far more square feet than average. 
+
 ## The unknown sampling distribution
 
 In this lab we have access to the entire population, but this is rarely the 
@@ -346,7 +428,7 @@ the population and use that to understand the properties of the population.
 If we were interested in estimating the mean living area in Ames based on a 
 sample, we can use the following command to survey the population.
 
-```{r samp1, eval=FALSE}
+```{r samp1, eval=TRUE}
 samp1 <- sample(area, 50)
 ```
 
@@ -362,7 +444,7 @@ home sales.
 If we're interested in estimating the average living area in homes in Ames 
 using the sample, our best single guess is the sample mean.
 
-```{r mean-samp1, eval=FALSE}
+```{r mean-samp1, eval=TRUE}
 mean(samp1)
 ```
 
@@ -377,6 +459,30 @@ population.
     more samples, one of size 100 and one of size 1000. Which would you think 
     would provide a more accurate estimate of the population mean?
 
+```{r}
+samp2 <- sample(area, 50)
+mean(samp1)
+mean(samp2)
+```
+
+Of course, the two sample means are different. The typical difference should decrease as we go to 100 and then 1000 (but might not in very case, since the results are still subject to random variation).
+
+```{r}
+n = 100
+samp1 <- sample(area, n)
+samp2 <- sample(area, n)
+mean(samp1)
+mean(samp2)
+```
+
+```{r}
+n = 1000
+samp1 <- sample(area, n)
+samp2 <- sample(area, n)
+mean(samp1)
+mean(samp2)
+```
+
 Not surprisingly, every time we take another random sample, we get a different 
 sample mean.  It's useful to get a sense of just how much variability we 
 should expect when estimating the population mean this way. The distribution 
@@ -386,7 +492,7 @@ can build up the sampling distribution for the sample mean by repeating the
 above steps many times. Here we will generate 5000 samples and compute the 
 sample mean of each.
 
-```{r loop, eval=FALSE}
+```{r loop, eval=TRUE}
 sample_means50 <- rep(NA, 5000)
 
 for(i in 1:5000){
@@ -400,7 +506,7 @@ hist(sample_means50)
 If you would like to adjust the bin width of your histogram to show a little 
 more detail, you can do so by changing the `breaks` argument.
 
-```{r hist-breaks, eval=FALSE}
+```{r hist-breaks, eval=TRUE}
 hist(sample_means50, breaks = 25)
 ```
 
@@ -413,10 +519,22 @@ the mean of each sample, and store each result in a vector called
     expect the distribution to change if we instead collected 50,000 sample 
     means?
 
+```{r}
+str(sample_means50)
+```
+
+There are 5000 values. The distribution (below) looks basically normal. Most importantly, it appears to be basically centered around the population mean (pop. mean = `r mean(area)`, shown with a red dashed line below: 
+
+```{r}
+hist(sample_means50)
+abline(v = mean(area),col='red',lwd=3,lty=2)
+```
+
+In reality, the distribution probably wouldn't change too much if we collected 50,000 instead of 5,000 sample means, because 5,000 is a lot and because sample means vary less than individual observations (that is, n = 5000 vs. n = 50,000 might produce very different distributions, but when you take 5000 samples of 50, you end up with a pretty large sample size anyways).
+
 ## Back to the `for` loop
 
-Let's review the `for` loop in the context of this example. Again, the idea behind the for loop is *iteration*: it allows 
-you to execute code as many times as you want without having to type out every 
+Let's review the `for` loop in the context of this example. Again, the idea behind the for loop is *iteration*: it allows you to execute code as many times as you want without having to type out every 
 iteration.  
 
 ```{r loop-again, eval=FALSE}
@@ -448,7 +566,19 @@ The `for` loop allows us to not just run the code 5000 times, but to neatly
 package the results, element by element, into the empty vector that we 
 initialized at the outset. 
 
-16.  To make sure you understand what you've done in this loop, try running a smaller version.  Initialize a vector of 100 zeros called `sample_means_small`.  Run a loop that takes a sample of size 50 from`area` and stores the sample mean in `sample_means_small`, but only iterate from 1 to 100.  Print the output to your screen (type `sample_means_small` into the console and press enter).  How many elements are there in this object called `sample_means_small`? What does each element represent?
+16.  To make sure you understand what you've done in this loop, try running a smaller version.  Initialize a vector of 100 zeros called `sample_means_small`.  Run a loop that takes a sample of size 50 from `area` and stores the sample mean in `sample_means_small`, but only iterate from 1 to 100.  Print the output to your screen (type `sample_means_small` into the console and press enter).  How many elements are there in this object called `sample_means_small`? What does each element represent?
+
+```{r}
+sample_means_small = rep(0,100)
+
+for (i in 1:length(sample_means_small))
+{
+  sample_means_small[i] <- mean(sample(area,50))
+}
+sample_means_small
+```
+
+There are 100 elements, each of which represents the mean of a sample of 50 houses in Ames. 
 
 ## Sample size and the sampling distribution
 
@@ -513,11 +643,40 @@ plotted with the same limits on the x-axis.
 
 17.  When the sample size is larger, what happens to the center?  What about the spread?
 
+Generally speaking, a larger sample size decreases the spread and increase the height at the center. 
+
 18. Take a random sample of size 50 from `price`. Using this sample, what is your best point estimate of the population mean?
+
+```{r}
+price.sample.mean <- mean(sample(price,50))
+price.sample.mean
+```
+
+Given this sample, the best guess for the mean is `r price.sample.mean`. 
 
 19. Since you have access to the population, simulate the sampling distribution for $\bar{x}_{price}$ by taking 5000 samples from the population of size 50 and computing 5000 sample means.  Store these means in a vector called `sample_means50`. Plot the data, then describe the shape of this sampling distribution. Based on this sampling distribution, what would you guess the mean home price of the population to be? Finally, calculate and report the population mean.
 
+```{r}
+sample_means50 <- rep(sample(price,50),5000)
+hist(sample_means50)
+```
+
+The sample distribution is (as expected) approximately normal. I'd guess that the mean home price is right about in the center of the distribution.
+
+```{r}
+mean(price)
+```
+
+The mean price is `r mean(price)`, which is pretty much in the center of the sample mean distribution. 
+
 20. Change your sample size from 50 to 150, then compute the sampling distribution using the same method as above, and store these means in a new vector called `sample_means150`. Describe the shape of this sampling distribution, and compare it to the sampling distribution for a sample size of 50.  Based on this sampling distribution, what would you guess to be the mean sale price of homes in Ames?
+
+```{r}
+sample_means150 <- rep(sample(price,150),5000)
+hist(sample_means150)
+```
+
+The "best guess" is about the same, but the new sampling distribution is a little bit tighter. In particular, there seems to be fewer outliers. 
 
 21. Of the sampling distributions from 19 and 20, which has a smaller spread?  If we're concerned with making estimates that are more often close to the true value, would we prefer a distribution with a large or small spread?
 
@@ -537,11 +696,10 @@ Enhanced code readability.
 
 ### Piping basics
 
-In R use `%>%` from the `magrittr` package (you might want the `dplyr` package as well).
+In R use `%>%` from the magrittr package.
 
 ```{r eval=FALSE}
 install.packages('magrittr'); library(magrittr)
-library(dplyr)
 ```
 
 The `%>%` "special function" passes a value to the first argument of the next function call.
@@ -560,8 +718,13 @@ round(value_mean, digits = 2)
 rnorm(1000, mean = 10) %>% mean() %>% round(digits = 2)
 ```
 
-22. Read in the body dimensions data file again, subset out only the female heights, find the standard deviation, and round to the nearest 3 digit decimal using`%>%` operator to combine both all into a single line. 
+22. Read in the body dimensions data file again, subset out only the female heights, find the standard deviation, and round to the nearest 3 digit decimal using the `%>%` operator to combine both all into a single line. 
 
+```{r message = FALSE,warning=FALSE}
+load('input/bdims.RData')
+library(magrittr); library(dplyr)
+bdims %>% filter(sex==1) %>% summarise(round(sd(hgt),3))
+```
 
 23. Why does the line of code below produce an NA result message rather than give you the standard deviation of your sample?
 
@@ -569,5 +732,4 @@ rnorm(1000, mean = 10) %>% mean() %>% round(digits = 2)
 rnorm(1000, mean = 10) %>% mean() %>% sd() #DOESN'T WORK
 ```
 
-
-
+This doesn't work because calling `mean` produces one number (the mean of the `rnorm` sample), which obviously can't take the standard deviation of (since you can't calculate the standard deviation of one number). 

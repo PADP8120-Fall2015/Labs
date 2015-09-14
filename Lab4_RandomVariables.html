@@ -193,7 +193,7 @@ if(x &lt;<span class="st"> </span><span class="dv">0</span>) <span class="kw">pr
 if(x &lt;<span class="st"> </span><span class="dv">0</span>) <span class="kw">print</span>(<span class="st">&quot;Hi!&quot;</span>)</code></pre>
 <ol start="3" style="list-style-type: decimal">
 <li><p>What about this error? What R does in this situation is use only the first condition value and a warning is issued.</p></li>
-<li><p>Write an <code>if</code> <code>else</code> loop that takes 10 random samples from the standard normal distribution (hint: <code>runif()</code>), and print the character string “positive” if the sampled value is greater than 0 and “negative” if the sampled value is less than 0.</p></li>
+<li><p>Write an <code>if</code> <code>else</code> loop that takes 10 random samples from the standard normal distribution (hint: <code>rnorm()</code>), and print the character string “positive” if the sampled value is greater than 0 and “negative” if the sampled value is less than 0.</p></li>
 </ol>
 <div id="breaking-a-loop" class="section level3">
 <h3>Breaking a loop</h3>
@@ -205,7 +205,7 @@ if(i ==<span class="st"> </span><span class="dv">7</span>) break
 }
 i</code></pre>
 <ol start="5" style="list-style-type: decimal">
-<li>Write a loop that draws a single value from a uniform distribution between 0 and 10, and “breaks” when a value is drawn that is greater than 8.</li>
+<li>Write a loop that draws ten values from a uniform distribution between 0 and 10, and “breaks” when a value is drawn that is greater than 8.</li>
 </ol>
 </div>
 <div id="nexting-a-loop" class="section level3">
@@ -361,7 +361,7 @@ xlimits &lt;-<span class="st"> </span><span class="kw">range</span>(sample_means
 <li><p>Take a random sample of size 50 from <code>price</code>. Using this sample, what is your best point estimate of the population mean?</p></li>
 <li><p>Since you have access to the population, simulate the sampling distribution for <span class="math">\(\bar{x}_{price}\)</span> by taking 5000 samples from the population of size 50 and computing 5000 sample means. Store these means in a vector called <code>sample_means50</code>. Plot the data, then describe the shape of this sampling distribution. Based on this sampling distribution, what would you guess the mean home price of the population to be? Finally, calculate and report the population mean.</p></li>
 <li><p>Change your sample size from 50 to 150, then compute the sampling distribution using the same method as above, and store these means in a new vector called <code>sample_means150</code>. Describe the shape of this sampling distribution, and compare it to the sampling distribution for a sample size of 50. Based on this sampling distribution, what would you guess to be the mean sale price of homes in Ames?</p></li>
-<li><p>Of the sampling distributions from 2 and 3, which has a smaller spread? If we’re concerned with making estimates that are more often close to the true value, would we prefer a distribution with a large or small spread?</p></li>
+<li><p>Of the sampling distributions from 19 and 20, which has a smaller spread? If we’re concerned with making estimates that are more often close to the true value, would we prefer a distribution with a large or small spread?</p></li>
 </ol>
 </div>
 </div>
@@ -379,8 +379,9 @@ xlimits &lt;-<span class="st"> </span><span class="kw">range</span>(sample_means
 </div>
 <div id="piping-basics" class="section level3">
 <h3>Piping basics</h3>
-<p>In R use <code>%&gt;%</code> from the magrittr package.</p>
-<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="st">'magrittr'</span>); <span class="kw">library</span>(magrittr)</code></pre>
+<p>In R use <code>%&gt;%</code> from the <code>magrittr</code> package (you might want the <code>dplyr</code> package as well).</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="st">'magrittr'</span>); <span class="kw">library</span>(magrittr)
+<span class="kw">library</span>(dplyr)</code></pre>
 <p>The <code>%&gt;%</code> “special function” passes a value to the first argument of the next function call.</p>
 </div>
 <div id="not-piped" class="section level3">
