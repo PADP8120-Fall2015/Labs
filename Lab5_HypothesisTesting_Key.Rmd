@@ -74,7 +74,7 @@ It looks like the sample values are pretty close to the population values. Since
 
 2. Change the second input into the `rexp` function above. How does this effect the histogram and sample mean and sd values? 
 
-The second input is the rate parameter, which effects the shape of the exponential curve (it is called the "rate" because it is the decay rate for the function). As the rate parameter increases, the curve drops more steeply (i.e, things decay faster), and as the rate parameter decreases, the curve decents more slowly. 
+The second input is the rate parameter, which effects the shape of the exponential curve (it is called the "rate" because it is the decay rate for the function). As the rate parameter increases, the curve drops more steeply (i.e, things decay faster), and as the rate parameter decreases, the curve descends more slowly. 
 
 ```{r eval=TRUE}
 x = rexp(100000,0.05)

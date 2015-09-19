@@ -53,7 +53,7 @@ Lets get specific and assume X is exponentially distributed. This is a standard 
 distributions which are highly skewed. To get R to take avery large, n = 100, 000 sample from an
 exponential distribution, try:
 
-```{r eval=FALSE}
+```{r eval=TRUE}
 x = rexp(100000,0.05)
 hist(x,prob=T)
 ```
@@ -63,16 +63,36 @@ The population mean and the population standard deviation for this example are g
 $$ \mu = \sigma = 20 $$
 
 Check with R:
-```{r eval=FALSE}
+```{r eval=TRUE}
 mean(x)
 sd(x)
 ```
 
 1. How close are the sample mean and sample standard deviation to the population values? 
 
+
 2. Change the second input into the `rexp` function above. How does this effect the histogram and sample mean and sd values? 
 
+The second input is the rate parameter, which effects the shape of the exponential curve (it is called the "rate" because it is the decay rate for the function). As the rate parameter increases, the curve drops more steeply (i.e, things decay faster), and as the rate parameter decreases, the curve descends more slowly. 
+
+```{r eval=TRUE}
+x = rexp(100000,0.05)
+hist(x,prob=T)
+```
+
+```{r eval=TRUE}
+x = rexp(100000,1)
+hist(x,prob=T)
+```
+
+```{r eval=TRUE}
+x = rexp(100000,0.00001)
+hist(x,prob=T)
+```
+
 3. What does this second input do?
+
+As discussed above, the second input determines the shape of the exponential distribution.
 
 We can repeat this to produce different samples:
 
@@ -91,21 +111,23 @@ mean(xsamp)
 
 5. Use the `replicate()` function to accomplish the same thing **without** a loop.
 
+
 The Central Limit Theorem is concerned with the distribution of this sample mean. Suppose we want to look at the mean value of 500 different samples of size n = 100. We can easily create this random variable (lets call it sampmean) in R. Try this:
 
-```{r eval=FALSE}
+```{r eval=TRUE}
 sampmean = replicate(500,mean(rexp(100,0.05)))
 ```
 
 First, what does the distribution of sample means look like?
 
-6. Use the `ggplot` library to make a histogram of the sample mean distribution.
+6. Use the `ggplot2` library to make a histogram of the sample mean distribution.
 
 7. Pretend like this is a figure for presentation/publication, and take a few minutes to make some tweaks to make it look fancy. You might want to try the `ggthemes` package for some fun style options. 
 
+
 In any case, your histogram should be approximately normal. This is the main statement of the CLT While the population distribution is far from normal, the **distribution of sample means** is approximately NORMAL.
 
-Recall that Fact 2 states that the mean ($\mu_{\bar{x}}$) and the standard deviation ($\sigma_{\bar{x}}$) of the (approximately normally distributed) sample means are related to the mean and standard deviation of the poulation by:
+Recall that Fact 2 states that the mean ($\mu_{\bar{x}}$) and the standard deviation ($\sigma_{\bar{x}}$) of the (approximately normally distributed) sample means are related to the mean and standard deviation of the population by:
 
 $$ \mu_{\bar{x}} $$
 
@@ -113,7 +135,8 @@ $$ \sigma_{\bar{x}} = \sigma \ \sqrt{n} $$
 
 Let's check...
 
-```{r eval=FALSE}
+```{r eval=TRUE}
+sampmean = replicate(500,mean(rexp(100,0.05)))
 mean(sampmean)
 sd(sampmean)
 20/sqrt(100)
@@ -122,13 +145,18 @@ sd(sampmean)
 8. How close is the output of `sd(samplmean)` to the `20/sqrt(100)` result? Repeat the sampling process and try again. 
 
 9. Redo the above analysis for samples of size 50, 400 and 900. Comment on the following:
+
 (a) How do the histograms of sampmean change as the sample size is increased? Does the standard deviation increase or decrease? Is the sample mean looking ’normal’?
-(b) How do the first two predictions of the central limit theorem compare to the actual data as the sample size is increased? Does µx approach µ? How about the second part of the
+
+(b) How do the first two predictions of the central limit theorem compare to the actual data as the sample size is increased? Does $\mu_x$ approach $\mu$? How about the second part of the
 Central Limit Theorem?
+
 
 10. Redo the analyis for a different population distribution. You may want to create data using a different binomial distribution or you may try out the R commands rexp(10000,.1) (exponential, long-tails) or rpois(1000,4) (Poisson Distribution, non-normal) or you may try something else. Whatever you chose as the population, examine what happens to various sized sample means. Check each part of the Central Limit Theorem.
 
-11. Consider a population of lightbulbs with mean failure time $\mu = 50$ standard deviation of failure times $\sigma = 20$ days (exponential distribution). If you take a sample of 100 lightbulbs, what are the chances the mean failure time of your sample will be:
+11. Consider a population of lightbulbs with mean failure time $\mu = 50$ standard deviation of failure times $\sigma = 20$ days. If you take a sample of 100 lightbulbs, what are the chances the mean failure time of your sample will be:
+
+(hint: Whereas before we used an exponential distribution for lightbulbs, here we are going to assume a normal distribution, so use the dnorm/pnorm/qnorm/rnorm family. Also, as you're doing this, make sure to give each result the "smell test". For instance, if the mean if 50 and the distribution is normal, should the answer to (a) be less than .50 or greater than .50?)
 
 (a) Greater than 53 days? 
 
@@ -136,7 +164,6 @@ Central Limit Theorem?
 
 (c) Between 46 and 54 days?
 
-(hint: we are going to assume a normal distribution, so use the dnorm/pnorm/qnorm/rnorm family. Also, as you're doing this, make sure to give each result the "smell test". For instance, if the mean if 50 and the distribution is normal, should the answer to (a) be less than .50 or greater than .50?)
 
 # Lab Part 2
 
@@ -167,8 +194,8 @@ Here is your assignment:
   (d) What are some other potential issues that you might want other/more data to examine? 
 
   (e) Using functions such as `is.na`, `!is.na`, and `apply`, compute the number of missing and observed values for each variable in the dataset. 
-  
+
   (f) Using `dplyr` and the `%>%` piping tool, find the mean value for `Nitrate.as.N.gm.L.` for each year in the dataset
-  
+
   (g) Identify the maximum value of `Nitrate.as.N.gm.L.` observed for each year. 
   
