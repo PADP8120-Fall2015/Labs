@@ -34,8 +34,7 @@ This lab is adapted from materials by:
 
 # Normal probabilities (i.e., p-values)
 
-In Lab 4, we used a body measurement dataset obtained from the folks at OpenIntro. Let's return to that dataset this week. Recall that this data set 
-contains measurements from 247 men and 260 women, most of whom were considered healthy young adults.
+In Lab 4, we used a body measurement dataset obtained from the folks at OpenIntro. Let's return to that dataset this week. Recall that this data set contains measurements from 247 men and 260 women, most of whom were considered healthy young adults.
 
 ```{r load-data, eval=TRUE,echo=FALSE,message=FALSE}
 load("input/bdims.RData")
@@ -65,24 +64,41 @@ take one minus that probability. Alternatively, we could invert the `pnorm` func
 pnorm(q = 182, mean = fhgtmean, sd = fhgtsd, lower.tail=F)
 ```
 
-Assuming a normal distribution has allowed us to calculate a theoretical 
-probability.  If we want to calculate the probability empirically, we simply 
-need to determine how many observations fall above 182 then divide this number 
-by the total sample size.
+Assuming a normal distribution has allowed us to calculate a theoretical probability.  If we want to calculate the probability empirically, we simply need to determine how many observations fall above 182 then divide this number by the total sample size.
 
 ```{r probability, eval=FALSE}
 sum(fdims$hgt > 182) / length(fdims$hgt)
 ```
 
 Although the probabilities are not exactly the same, they are reasonably close. 
-The closer that your distribution is to being normal, the more accurate the 
-theoretical probabilities will be.
+The closer that your distribution is to being normal, the more accurate the theoretical probabilities will be.
 
-1.  Write out two probability questions that you would like to answer; one 
-    regarding female heights and one regarding female weights.  Calculate the 
-    those probabilities using both the theoretical normal distribution as well 
-    as the empirical distribution (four probabilities in all).  Which variable,
-    height or weight, had a closer agreement between the two methods?
+1.  Write out two probability questions that you would like to answer; one regarding female heights and one regarding female weights.  Calculate the those probabilities using both the theoretical normal distribution as well as the empirical distribution (four probabilities in all).  Which variable, height or weight, had a closer agreement between the two methods?
+
+I'll choose two examples:
+ 
+Example 1: What is the probability that a randomly chosen female is less than 6ft tall?
+ 
+```{r}
+pnorm(q = 182, mean = fhgtmean, sd = fhgtsd, lower.tail=T)
+sum(fdims$hgt < 182) / length(fdims$hgt)
+```
+
+Here, the values are pretty close. Basically, either way we conclude that there is about a 99.5% chance that a randomly chosen female will be less than 6ft tall. 
+
+Example 2: What is the probability that a randomly chosen female weighs less than 100 pounds? (note that wt is in kg, so we'll approximate and multiply by 2.2 to get lbs)
+
+```{r}
+fwtmean = mean(bdims$wgt[bdims$sex==0]*2.2)
+fwtsd = sd(bdims$wgt[bdims$sex==0]*2.2)
+pnorm(q = 100, mean = fwtmean, sd = fwtsd, lower.tail=T)
+sum((bdims$wgt[bdims$sex==0]*2.2) < 100) / length(bdims$wgt[bdims$sex==0])
+```
+
+Here, we don't get very good agreement. The distribution-based method estimates the probability of a female weighing less than 100lbs at about 0.058, whereas the observed-data method estimates the probability to be 0.015.
+
+Height thus seems to have better agreement between the two methods. 
+
 
 ## R and probability
 
@@ -175,12 +191,50 @@ to generate 10. If we generate enough values, we should approximate the distribu
 
 2. Repeat the commands shown above, but this time to answer the quesiont, "What is the probability that a randomly chosen young adult male is taller than 5'6" (about 167 cm)?"
 
+```{r}
+mhgtmean <- mean(mdims$hgt) #mean male height
+mhgtsd   <- sd(mdims$hgt) #male height standard deviation
+pnorm(167,mean=mhgtmean,mhgtsd,lower.tail=FALSE)
+```
+
+We find that there the probability that a randomly selected adult male is taller than 167cm is about 0.93. 
+
 3. Use `rnorm` to simulate a vector of random values from the male height distribution you specify. About how many random numbers do you need to generate before the density plot begins to look "normal"? (use `densityplot` from the `lattice` package for an easy way to plot the density of simulated values)
 
 ```{r eval=FALSE}
 library(lattice)
 densityplot(rnorm(100,sd=fhgtsd,mean=fhgtmean))
 ```
+
+```{r message = FALSE}
+library(lattice)
+densityplot(rnorm(10,mean=mhgtmean,sd=mhgtsd))
+```
+
+10 draws doesn't look very good...
+
+```{r message = FALSE}
+densityplot(rnorm(50,mean=mhgtmean,sd=mhgtsd))
+```
+
+50 is better...
+
+```{r message = FALSE}
+densityplot(rnorm(500,mean=mhgtmean,sd=mhgtsd))
+```
+
+500 is even better...
+
+```{r message = FALSE}
+densityplot(rnorm(500,mean=mhgtmean,sd=mhgtsd))
+```
+
+and when we draw a TON of samples, it's looks (as it should) like a normal distribution:
+
+```{r message = FALSE}
+densityplot(rnorm(10000,mean=mhgtmean,sd=mhgtsd))
+```
+
 
 ## Other distributions
 
@@ -206,9 +260,22 @@ runif()
 
 4. Use the `runif()` function to generate a vector of 1000 randomly drawn values from a uniform distribution between 0 and 100.
 
+```{r}
+runif.sample <- runif(1000,0,100)
+str(runif.sample)
+```
+
 5. What is the expected value of this sample mean? Why? 
 
+As you might "expect", E(x) = (0+100)/2 = 50. Basically, in a uniform distribution, every value has an equal chance of being drawn. Thus, our "best guess" for a given draw is exactly in the middle of the range, since we have no basis for guessing whether a random draw is likely to be above or below this point. 
+
 6. Calculate the sample mean
+
+```{r}
+mean(runif.sample)
+```
+
+Almost 50 as we expect.
 
 # Confidence Intervals
 
@@ -231,14 +298,35 @@ sd(pop)
 
 7. What does the histogram says about the data. 
 
+As stated above, we see a skewed distribution with most values near 64, no values above 65, and a few values trickling off as we get below 60. 
+
 8. Based upon the "observed" population data (the data you just simulated) what are the chances of finding a soda bottle with less than 64 oz in it? What about more than 64 oz?
+
+Since we are assuming that the data we just simulated are the population data, we simply need to compute the proportion of bottles above and below 64 ounces:
+```{r}
+sum(pop>64)/length(pop)
+sum(pop<64)/length(pop)
+```
+
+As should be expected that we simulated the data based upon an assumed mean of 64, there is basically a 0.5 probability of being above or below 64 ounces.
 
 9. Make a boxplot of the data. Is it what you expect? Why?
 
+```{r}
+boxplot(pop)
+```
+
+The boxplot demonstrates the skewed nature of the distribution; the mean (shown by the solid black horizontal line) is at 64, but there are many outliers on the lower end. 
+
 10. Find the population mean and standard deviation.
 
+```{r}
+mean(pop)
+sd(pop)
+```
 
-Recall that the Central Limit Theorem says that no matter what the shape of the population distribution, the shape of the distribution of sample means (for large enough sample size) is approximately normal. Suppose we take many samples of size n = 40. 
+Recall that the Central Limit Theorem says that no matter what the shape of the population distribution, the shape of the
+distribution of sample means (for large enough sample size) is approximately normal. Suppose we take many samples of size n = 40. 
 
 The janky way to do this is with this code:
 
@@ -253,11 +341,12 @@ for (i in 1:500) sampmeans[i] = mean(sample(pop,40, rep=T))
 sampmeans = replicate(500,mean(sample(pop,40,rep=T)))
 ```
 
-```{r eval=TRUE}
+```{r eval=FALSE}
 hist(sampmeans)
 ```
 
 We can visualize the sample mean distribution, but we might want to quantify how "normal" the distribution is. One way to quantify this is to make the ’normal probability’ plot. The basic idea is to plot the quantiles of your distribution against the quantiles of a truly normal distribution. If the plot is a straight line, then the data is distributed just like the normal data. This type of plot is also known as a "q-q" plot, which is short for "quantile vs. quantile" plot. 
+
 ```{r}
 qqnorm(sampmeans) #Plot q-q points
 qqline(sampmeans) #Add "perfect" line
@@ -265,9 +354,32 @@ qqline(sampmeans) #Add "perfect" line
 
 12. What does the q-q plot tell us? 
 
+In this case, we see the the sample mean distribution reasonably approximates a normal distribution. Things break down at the tails, particularly the upper tail, since we enver seem to get a sample mean ABOVE 64 but we get plenty below. 
+
 13. Change the sample size and compare the qqnorm plots. Try sample sizes n = 64, n = 100 and n = 256.
 
+```{r}
+sampmeans64 = replicate(500,mean(sample(pop,64,rep=T)))
+qqnorm(sampmeans64) #Plot q-q points
+qqline(sampmeans64) 
+```
+
+```{r}
+sampmeans100 = replicate(500,mean(sample(pop,100,rep=T)))
+qqnorm(sampmeans100) #Plot q-q points
+qqline(sampmeans100) 
+```
+
+```{r}
+sampmeans256 = replicate(500,mean(sample(pop,256,rep=T)))
+qqnorm(sampmeans256) #Plot q-q points
+qqline(sampmeans256) 
+```
+
 14. What happens as the sample size increases? Why?
+
+Generally, things get a little more "normal" because we are reducing sampling variation.
+
 
 
 ### Computing confidence intervals
@@ -307,15 +419,56 @@ matplot(rbind(sampmeans2 - tstar*SE, sampmeans2 + tstar*SE),rbind(1:m,1:m), type
 abline(v=mu)
 ```
 
+The `sampmeans2` object contains the mean of 50 different samples. Thus, for each of these sample means, we subtract/add the product of the t-critical value and the standard error to get the confidence interval bounds.
+
 19. How many of these 50 CIs would be expect to not contain the "true" value (shown by the solid black line) simply due to random sampling error? 
+
+Recall that we computed 90% confidence intervals; this means that 9 times out of 10, we expect that our CI will contain the true population mean. Thus, since we took 50 samples, we'd expect that 5 times out of 50 the CI WILL NOT contain the true population mean simply due to random chance.
 
 20. Change the sample size, n. Try n = 100 and n = 256.
 
   (a) Replot the 50 90% confidence intervals. How many of the 50 actually bracket the true mean?
+  
+```{r eval=TRUE}
+n=100
+sampmeans3 = replicate(50,mean(sample(pop,n,rep=T)))
+m = 50; n = 40; mu = mean(pop); sigma = sd(pop);
+SE = sigma/sqrt(n)
+alpha = 0.10
+tstar = 1-qt(alpha/2,df=50)
+
+matplot(rbind(sampmeans3 - tstar*SE, sampmeans2 + tstar*SE),rbind(1:m,1:m), type="l", lty=1)
+abline(v=mu)
+```
+
+```{r eval=TRUE}
+n=256
+sampmeans3 = replicate(50,mean(sample(pop,n,rep=T)))
+m = 50; n = 40; mu = mean(pop); sigma = sd(pop);
+SE = sigma/sqrt(n)
+alpha = 0.10
+tstar = 1-qt(alpha/2,df=50)
+
+matplot(rbind(sampmeans3 - tstar*SE, sampmeans2 + tstar*SE),rbind(1:m,1:m), type="l", lty=1)
+abline(v=mu)
+```
+
 
   (b) Set the sample size to n = 40, but take 100 different samples and change the confidence interval size. For $alpha = 0.05$, make a plot of 100 confidence intervals. How many do expect will NOT bracket the true population mean? Is this what you see?
+  
+```{r eval=TRUE,results='hide'}
+n=40
+sampmeans3 = replicate(100,mean(sample(pop,n,rep=T)))
+m = 100; n = 40; mu = mean(pop); sigma = sd(pop);
+SE = sigma/sqrt(n)
+alpha = 0.05
+tstar = 1-qt(alpha/2,df=50)
 
+matplot(rbind(sampmeans3 - tstar*SE, sampmeans3 + tstar*SE),rbind(1:m,1:m), type="l", lty=1)
+abline(v=mu)
+```
 
+Since we ran 100 different sampling processes, we'd expect that 1 out of every 20 (or 5 total) CIs would not contain the population mean. 
 
 # Transformations (extra topic)
 
