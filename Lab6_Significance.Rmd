@@ -216,7 +216,7 @@ Lets look at confidence intervals and hypothesis tests using some ‘real’ dat
 
 Now suppose we had ALL the data on Coke's Atlanta soda bottles. This is the same as assuming we know everything about the population. We will use R to simulate a population of amounts of soda in 10,000 soda bottles. We assume an exponential population distribution function and randomly create 10,000 pieces of data in a variable called `pop`. DO NOT WORRY about the mechanics of the first line of good; suffice to say, it generates an exponential distribution of values with a maximum of 65 ounces and a left-hand tail that decreases exponentially such that most values are very near the mean of 64. In an unaltered exponential distribution, the mean = sd; note that in the code below, we subtract the randomly generated values from 65, so the mean of `pop` will not equal the standard deviation. 
 
-```{r eval=TRUE,echo=FALSE}
+```{r eval=TRUE}
 pop = 65 - rexp(100000,0.65);
 hist(pop)
 ```
