@@ -28,6 +28,7 @@ After this lab you will be able to:
 - This lab uses materials by Mine Cetinkaya-Rundel
 
 #One and Two-sample t-tests
+
 The R function t.test() can be used to perform both one and two sample t-tests on vectors of data. The function contains a variety of options and can be called as follows:
 
 ```{r eval=FALSE}
@@ -137,7 +138,7 @@ Here the pooled t-test and the Welsh t-test give roughly the same results (p-val
 
 Again, we can duplicate this result **without** using the `t.test` function using the `pt/qt/dt` family. However, we have to take a shortcut when doing a two-sample by hand when it comes to the appropriate degress of freedom. The Welch-Satterthwaite Equation (https://en.wikipedia.org/wiki/Welch%E2%80%93Satterthwaite_equation) is used to estimate the **effective** degrees of freedom within internal R functions. For our by-hand process, let's use approximate this using the 
 
-```{r eval=FALSE}
+```{r eval=TRUE}
 #t.obs = (obs - expected) / SD
 t.obs = ((mean(Control)-mean(Treat)) - 0) / sqrt({sd(Control)^2 / length(Control)} + {sd(Treat)^2 / length(Treat)})
 2 * pt(t.obs,df = min(length(Control),length(Treat))-1)
@@ -146,6 +147,12 @@ t.obs = ((mean(Control)-mean(Treat)) - 0) / sqrt({sd(Control)^2 / length(Control
 Why do we need to multiply this result by 2? Recall that we are conducting a two-sided test, but `pt` only gives us the probability associated with one tail or another. Thus, we have to double the output to find the probability associated with each tail. The `t.obs` should match perfectly with the `t.test` output, but the `pt` result will be slightly different due to the shortcut we took with inputing the degrees of freedom (we used df = `r min(length(Control),length(Treat))-1` instead of the approximation 9.4797).
 
 1. Try re-running the `pt` code above, but plug in the Welch-Satterthwaite df approximation you get as part of the `t.test` output. Do the p-values you get from the `pt` method and the `t.test` method match up now?
+
+```{r}
+2 * pt(t.obs,df = t.test(Control,Treat,alternative="two.sided")$parameter)
+```
+
+The p-values are basically identical now. The `parameter` value is the df statistic shown when you run the `t.test` comman. 
 
 # Paired t-tests
 
@@ -187,7 +194,7 @@ observations from this data set.
 
 Load the `nc` data set into our workspace.
 
-```{r load-data, eval=FALSE}
+```{r load-data, eval=TRUE,message=FALSE,warning=FALSE}
 download.file("http://www.openintro.org/stat/data/nc.RData", destfile = "nc.RData")
 load("nc.RData")
 ```
@@ -216,7 +223,7 @@ variable         | description
 As a first step in the analysis, we should consider summaries of the data. This
 can be done using the `summary` command:
 
-```{r summary, eval=FALSE}
+```{r summary, eval=TRUE}
 summary(nc)
 ```
 
@@ -232,16 +239,26 @@ questions.
 2.  Make a side-by-side boxplot of `habit` and `weight`. What does the plot 
 highlight about the relationship between these two variables?
 
+```{r}
+boxplot(nc$weight~nc$habit)
+```
+
+It looks like nonsmoking mothers typically have higher-birthweight babies, although the difference is not huge. It looks like the primary difference is on the upper end - only nonsmoking mothers seem to have babies above 10 pounds. 
+
 The box plots show how the medians of the two distributions compare, but we can
 also compare the means of the distributions using the following function to 
 split the `weight` variable into the `habit` groups, then take the mean of each
 using the `mean` function.
 
-```{r by-means, eval=FALSE}
+```{r by-means, eval=TRUE}
 by(nc$weight, nc$habit, mean)
 ```
 
 3. Recall the `apply` family of functions: repeat the operation above, but use the `tapply` function
+
+```{r}
+tapply(nc$weight,nc$habit,mean)
+```
 
 There is an observed difference, but is this difference statistically significant (i.e., is it more likely that the two "True" values are identical but we observed a difference due to random chance, or is it more likely that the two values really are different?)? In order to answer this question we will conduct a hypothesis test.
 
@@ -249,30 +266,93 @@ There is an observed difference, but is this difference statistically significan
 
 4. Check if the conditions necessary for inference are satisfied (independence within groups, independence between groups, sample sizes both above 30, and symmetric distributions). Note that you will need to obtain sample sizes to check the conditions. You can compute the group size using the same `by` command above but replacing `mean` with `length`. You can also accomplish the same thing using the `table()` function:
 
-```{r eval=FALSE}
+```{r eval=TRUE}
 table(nc$habit)
 ```
+
+- The table function results show that both groups have n >30. 
+- Independence is an assumption, but it seems founded in case; the weight of one baby should not affect the weight of any other, and likewise baby weights within either group should have no bearing on the other group.
+- The boxplot above gives us an indication that each distribution is close to symmetric, but perhaps skewed to the left. This makes sense, since babies born early can weigh very, very little, but there's basically no such thing as a baby that weights more than about 12 pounds. Let's check:
+
+```{r message = FALSE}
+library(ggplot2)
+ggplot(nc,aes(x=weight,group=habit,col=habit)) + geom_density() + theme_bw()
+```
+
+As the plot shows, both distributions are *roughly* symmetric, at least good enought to proceed. 
 
 5  Write the hypotheses for testing if the average weights of babies born to 
 smoking and non-smoking mothers are different.
 
+H0: There is no difference in average birth weight between babies born to smoking and non-smoking mothers
+
+HA: The average birth weight of babies born to smoking mothers is different than the average weight of babies born to non-smoking numbers. 
+
 6. Test this hypothesis using the `t.test` function.
+
+```{r}
+t.test(nc$weight[nc$habit=='nonsmoker'],nc$weight[nc$habit=='smoker'])
+```
+
+Since p < 0.05 (or since $t_{obs} > t_{\alpha/2,df=171.32}$), we reject the null hypothesis and conclude that there is good evidence to support that there is a significant different in birth weight between babies born to nonsmoking and smoking mothers.
 
 7. Find the 99% confidence interval for the difference of sample means (hint: look at the `conf.level` setting within the `t.test` function)
 
+The easiest way to do this is to reset the significance level:
+```{r}
+t.test(nc$weight[nc$habit=='nonsmoker'],nc$weight[nc$habit=='smoker'],conf.level=0.99)
+```
+and we find that the 99% confidence interval for the average difference is -0.03 to 0.66.
+
 8. Duplicate the test in item 5 using the `pt` function. 
+
+```{r}
+t.obs = ((mean(nc$weight[nc$habit=='nonsmoker'],na.rm=T)-
+            mean(nc$weight[nc$habit=='smoker'],na.rm=T)) - 0) / sqrt({sd(nc$weight[nc$habit=='nonsmoker'],na.rm=T)^2 / length(nc$weight[nc$habit=='nonsmoker'])} + {sd(nc$weight[nc$habit=='smoker'],na.rm=T)^2 / length(nc$weight[nc$habit=='smoker'])})
+
+(2 * pt(t.obs,df = min(length(nc$weight[nc$habit=='smoker']),length(nc$weight[nc$habit=='nonsmoker']))-1))
+```
 
 9. Calculate a 95% confidence interval for the average length of pregnancies 
 (`weeks`) and interpret it in context.
 
+```{r}
+avg.wk <- mean(nc$weeks,na.rm=T) 
+sd.wk <- sd(nc$weeks,na.rm=T)
+n.wk <- length(nc$weeks[!is.na(nc$weeks)])
+t.crit <- qt(p = c(0.025,0.975),df = n.wk-1)
+avg.wk + t.crit * (sd.wk/sqrt(n.wk))
+```
+
+We are 95% confident that the true average pregnancy length is between 38.15 and 38.52 weeks.
+
 10. Calculate a new confidence interval for the same parameter at the 90% 
 confidence level.
 
+```{r}
+t.crit <- qt(p = c(0.05,0.95),df = n.wk-1)
+avg.wk + t.crit * (sd.wk/sqrt(n.wk))
+```
+
+We are 90% confident that the true average pregnancy length is between 38.18 and 38.49 weeks. 
+
 11. Conduct a hypothesis test evaluating whether the average weight gained by 
 younger mothers is different than the average weight gained by mature mothers.
+
+H0: Young mothers and mature mothers gain the same amount of weight during pregnancy.
+
+HA: Young mothers and mature mothers gain a different amount of weight during pregnancy.
+
+```{r}
+t.test(nc$gained[nc$mature=='mature mom'],nc$gained[nc$mature=='younger mom'])
+```
+
+As p > 0.17, we fail to reject the null hypothesis (basically at any significance level) and conclude that there is no good evidence to support that young and mature mothers gain a differential amount of weight during pregnancy.
 
 12. Pick a pair of numerical and categorical variables and come up with a 
 research question evaluating the relationship between these variables. 
 Formulate the question in a way that it can be answered using a hypothesis test
 and/or a confidence interval. Report the statistical results, and also provide an explanation in plain language.
+
+
 
