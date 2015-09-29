@@ -347,26 +347,69 @@ prem =<span class="st"> </span><span class="kw">c</span>(<span class="dv">19</sp
 ##  7.144273  6.828730</code></pre>
 <p>Since p &lt; 0.05 (or since <span class="math">\(t_{obs} &gt; t_{\alpha/2,df=171.32}\)</span>), we reject the null hypothesis and conclude that there is good evidence to support that there is a significant different in birth weight between babies born to nonsmoking and smoking mothers.</p>
 <ol start="7" style="list-style-type: decimal">
-<li><p>Find the 99% confidence interval for the difference of sample means (hint: look at the <code>conf.level</code> setting within the <code>t.test</code> function)</p></li>
-<li><p>Duplicate the test in item 5 using the <code>pt</code> function.</p></li>
-<li><p>Calculate a 95% confidence interval for the average length of pregnancies (<code>weeks</code>) and interpret it in context.</p></li>
-<li><p>Calculate a new confidence interval for the same parameter at the 90% confidence level.</p></li>
-<li><p>Conduct a hypothesis test evaluating whether the average weight gained by younger mothers is different than the average weight gained by mature mothers.</p></li>
-<li><p>Pick a pair of numerical and categorical variables and come up with a research question evaluating the relationship between these variables. Formulate the question in a way that it can be answered using a hypothesis test and/or a confidence interval. Report the statistical results, and also provide an explanation in plain language.</p></li>
+<li>Find the 99% confidence interval for the difference of sample means (hint: look at the <code>conf.level</code> setting within the <code>t.test</code> function)</li>
+</ol>
+<p>The easiest way to do this is to reset the significance level:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">t.test</span>(nc$weight[nc$habit==<span class="st">'nonsmoker'</span>],nc$weight[nc$habit==<span class="st">'smoker'</span>],<span class="dt">conf.level=</span><span class="fl">0.99</span>)</code></pre>
+<pre><code>## 
+##  Welch Two Sample t-test
+## 
+## data:  nc$weight[nc$habit == &quot;nonsmoker&quot;] and nc$weight[nc$habit == &quot;smoker&quot;]
+## t = 2.359, df = 171.32, p-value = 0.01945
+## alternative hypothesis: true difference in means is not equal to 0
+## 99 percent confidence interval:
+##  -0.03288088  0.66396580
+## sample estimates:
+## mean of x mean of y 
+##  7.144273  6.828730</code></pre>
+<p>and we find that the 99% confidence interval for the average difference is -0.03 to 0.66.</p>
+<ol start="8" style="list-style-type: decimal">
+<li>Duplicate the test in item 5 using the <code>pt</code> function.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r">t.obs =<span class="st"> </span>((<span class="kw">mean</span>(nc$weight[nc$habit==<span class="st">'nonsmoker'</span>],<span class="dt">na.rm=</span>T)-
+<span class="st">            </span><span class="kw">mean</span>(nc$weight[nc$habit==<span class="st">'smoker'</span>],<span class="dt">na.rm=</span>T)) -<span class="st"> </span><span class="dv">0</span>) /<span class="st"> </span><span class="kw">sqrt</span>({<span class="kw">sd</span>(nc$weight[nc$habit==<span class="st">'nonsmoker'</span>],<span class="dt">na.rm=</span>T)^<span class="dv">2</span> /<span class="st"> </span><span class="kw">length</span>(nc$weight[nc$habit==<span class="st">'nonsmoker'</span>])} +<span class="st"> </span>{<span class="kw">sd</span>(nc$weight[nc$habit==<span class="st">'smoker'</span>],<span class="dt">na.rm=</span>T)^<span class="dv">2</span> /<span class="st"> </span><span class="kw">length</span>(nc$weight[nc$habit==<span class="st">'smoker'</span>])})
+
+(<span class="dv">2</span> *<span class="st"> </span><span class="kw">pt</span>(t.obs,<span class="dt">df =</span> <span class="kw">min</span>(<span class="kw">length</span>(nc$weight[nc$habit==<span class="st">'smoker'</span>]),<span class="kw">length</span>(nc$weight[nc$habit==<span class="st">'nonsmoker'</span>]))-<span class="dv">1</span>))</code></pre>
+<pre><code>## [1] 1.980553</code></pre>
+<ol start="9" style="list-style-type: decimal">
+<li>Calculate a 95% confidence interval for the average length of pregnancies (<code>weeks</code>) and interpret it in context.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r">avg.wk &lt;-<span class="st"> </span><span class="kw">mean</span>(nc$weeks,<span class="dt">na.rm=</span>T) 
+sd.wk &lt;-<span class="st"> </span><span class="kw">sd</span>(nc$weeks,<span class="dt">na.rm=</span>T)
+n.wk &lt;-<span class="st"> </span><span class="kw">length</span>(nc$weeks[!<span class="kw">is.na</span>(nc$weeks)])
+t.crit &lt;-<span class="st"> </span><span class="kw">qt</span>(<span class="dt">p =</span> <span class="kw">c</span>(<span class="fl">0.025</span>,<span class="fl">0.975</span>),<span class="dt">df =</span> n.wk<span class="dv">-1</span>)
+avg.wk +<span class="st"> </span>t.crit *<span class="st"> </span>(sd.wk/<span class="kw">sqrt</span>(n.wk))</code></pre>
+<pre><code>## [1] 38.15257 38.51677</code></pre>
+<p>We are 95% confident that the true average pregnancy length is between 38.15 and 38.52 weeks.</p>
+<ol start="10" style="list-style-type: decimal">
+<li>Calculate a new confidence interval for the same parameter at the 90% confidence level.</li>
+</ol>
+<pre class="sourceCode r"><code class="sourceCode r">t.crit &lt;-<span class="st"> </span><span class="kw">qt</span>(<span class="dt">p =</span> <span class="kw">c</span>(<span class="fl">0.05</span>,<span class="fl">0.95</span>),<span class="dt">df =</span> n.wk<span class="dv">-1</span>)
+avg.wk +<span class="st"> </span>t.crit *<span class="st"> </span>(sd.wk/<span class="kw">sqrt</span>(n.wk))</code></pre>
+<pre><code>## [1] 38.18189 38.48745</code></pre>
+<p>We are 90% confident that the true average pregnancy length is between 38.18 and 38.49 weeks.</p>
+<ol start="11" style="list-style-type: decimal">
+<li>Conduct a hypothesis test evaluating whether the average weight gained by younger mothers is different than the average weight gained by mature mothers.</li>
+</ol>
+<p>H0: Young mothers and mature mothers gain the same amount of weight during pregnancy.</p>
+<p>HA: Young mothers and mature mothers gain a different amount of weight during pregnancy.</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">t.test</span>(nc$gained[nc$mature==<span class="st">'mature mom'</span>],nc$gained[nc$mature==<span class="st">'younger mom'</span>])</code></pre>
+<pre><code>## 
+##  Welch Two Sample t-test
+## 
+## data:  nc$gained[nc$mature == &quot;mature mom&quot;] and nc$gained[nc$mature == &quot;younger mom&quot;]
+## t = -1.3765, df = 175.34, p-value = 0.1704
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  -4.3071463  0.7676886
+## sample estimates:
+## mean of x mean of y 
+##  28.79070  30.56043</code></pre>
+<p>As p &gt; 0.17, we fail to reject the null hypothesis (basically at any significance level) and conclude that there is no good evidence to support that young and mature mothers gain a differential amount of weight during pregnancy.</p>
+<ol start="12" style="list-style-type: decimal">
+<li>Pick a pair of numerical and categorical variables and come up with a research question evaluating the relationship between these variables. Formulate the question in a way that it can be answered using a hypothesis test and/or a confidence interval. Report the statistical results, and also provide an explanation in plain language.</li>
 </ol>
 </div>
-</div>
-<div id="data-in-the-wild-again" class="section level1">
-<h1>Data in the wild (again)</h1>
-<p>For the last part of lab, we are going to integrate today’s topic with some real-world messy data. Let’s use data from the New York City school voucher lottery a colleage and I obtained from Mathematic for a paper:</p>
-<pre class="sourceCode r"><code class="sourceCode r">nyc =<span class="st"> </span><span class="kw">read.csv</span>(<span class="st">'input/NYC_SchoolVoucher_Experiment.csv'</span>)</code></pre>
-<ol start="13" style="list-style-type: decimal">
-<li><p>Your first task is to get aquainted with the data. Most of the variables you need should be pretty self explanatory.</p></li>
-<li><p>The second step will of course be to clean the data as needed.</p></li>
-<li><p>Conduct an analysis to answer the research question: Do eldest children perform better on math than non-eldest children. Be sure to evaluate the validity of the assumptions you need for a t.test to be appropriate (e.g., symmetric distributions, similar sample sizes, etc.).</p></li>
-<li><p>Now conduct an analysis to see whether the average improvement between year 0 and year 1 is different for “treated” students (those who recieve the voucher) and “untreated students” (those who did not recieve a voucher to attend a private school)</p></li>
-<li><p>Do you have any concerns about these data that might call our findings into question? What else might you want to know more about before you really bought into these results?</p></li>
-</ol>
 </div>
 
 
