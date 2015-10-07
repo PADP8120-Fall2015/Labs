@@ -1,0 +1,546 @@
+
+---
+title: "PADP_8120_Lab8: ANOVA and Chi Square"
+author: "Tyler Scott"
+date: "2015-08-15 ![Creative Commons License](images/cc-by.png)" 
+output:
+  html_document:
+    highlight: pygments
+    theme: cerulean
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
+---
+
+# Lab Topics
+
+- ANOVA
+- T.test for proportions
+- Chi-square
+
+##Goals:
+
+After this lab you will be able to:
+- conduct and interpret one-way and two-way ANOVAs
+- Perform t-tests to compare mean proportions and develop confidence intervals for proportion estimates
+- Conduct tests of association on categorical variables. 
+
+## 
+This lab uses materials by 
+- Andrew Bray and Mine Cetinkaya-Rundel
+- Gael Varoquaux (https://github.com/cogmaster-stats)
+- Whoever operates the `https://github.com/genomicsclass` github repository at Harvard
+
+# Inference on proportions
+
+In August of 2012, news outlets ranging from the [Washington Post](http://www.washingtonpost.com/national/on-faith/poll-shows-atheism-on-the-rise-in-the-us/2012/08/13/90020fd6-e57d-11e1-9739-eef99c5fb285_story.html) to the [Huffington
+Post](http://www.huffingtonpost.com/2012/08/14/atheism-rise-religiosity-decline-in-america_n_1777031.html) ran a story about the rise of atheism in America. The source for the story was a poll that asked people, "Irrespective of whether you attend a place of worship or not, would you say you are a religious person, not a religious person or a convinced atheist?" This type of question, which asks people to classify themselves in one way or another, is common in polling and generates categorical data. Let's use these data to explore making inferences about population proportions using categorical data.
+
+#### The survey 
+
+To access the press release for the poll, conducted by WIN-Gallup 
+International, click on the following link:
+
+*<http://www.wingia.com/web/files/richeditor/filemanager/Global_INDEX_of_Religiosity_and_Atheism_PR__6.pdf>*
+
+Take a moment to review the report then address the following questions.
+
+1.  In the first paragraph, several key findings are reported. Do these 
+    percentages appear to be *sample statistics* (derived from the data 
+    sample) or *population parameters*?
+    
+These are sample statistics, since they stem from a survey that samples from a broader population. 
+
+2.  The title of the report is "Global Index of Religiosity and Atheism". To
+    generalize the report's findings to the global human population, what must 
+    we assume about the sampling method? Does that seem like a reasonable 
+    assumption?
+    
+We must assume that every person on earth had a known probability of being sampled (not necessarily an equal probability, since we can weight the results). 
+
+#### The data
+
+Turn your attention to Table 6 (pages 15 and 16) in the report, which reports the
+sample size and response percentages for all 57 countries. While this is
+a useful format to summarize the data, we will base our analysis on the
+original data set of individual responses to the survey. Load this data
+set into R with the following command.
+
+```{r head-data, eval=TRUE,results='hide',message=FALSE}
+load("input/atheism.RData")
+```
+
+3.  What does each row of Table 6 correspond to? What does each row of 
+    `atheism` correspond to?
+    
+Table 6 in the online report shows each country as a separate row, with the number of respondents and the proportion of responses by religion for each country.
+```{r}
+head(atheism)
+```
+
+In the "atheism" dataset, each row represents an individual respondent.
+
+
+To investigate the link between these two ways of organizing this data, take a look at the estimated proportion of atheists in the United States. Towards the bottom of Table 6, we see that this is $5%$. We should be able to come to the same number using the `atheism` data.
+
+4.  Using the `dplyr` package functions you are familiar with (e.g., `filter()`), create a new dataframe called `us12` that contains only the rows in `atheism` associated with respondents to the 2012 survey from the United States. Next, calculate the proportion of atheist responses. Does it agree with the percentage in Table 6? If not, why?
+
+```{r us-atheism, eval=TRUE, echo=TRUE,message=FALSE}
+library(dplyr)
+us12 <- atheism %>% filter(nationality=='United States',year=='2012')
+```
+
+Results from Table 6 in report:
+
+|   | Sample Size    | A religious person    | Not a religious person    | A convinced atheist    | Don’t know / no response    | 
+|-------|------|------|------|------|------|----|
+| US | 1002 | 60% | 30% | 5% |  5%|    |
+
+```{r}
+table(us12$response)/nrow(us12)
+```
+
+The results are consistent with Table 6, in that we seea bout 5% of respondents are atheists.
+
+Table 6 provides *statistics*, that is, calculations made from the sample of 51,927 people. What we'd like, though, is insight into the population *parameters*. You answer the question, "What proportion of people in your sample reported being atheists?" with a statistic; while the question "What proportion of people on earth would report being atheists" is answered with an estimate of the parameter.
+
+The inferential tools for estimating population proportion are analogous to 
+those used for means in the last chapter: the confidence interval and the 
+hypothesis test.
+
+5.  Write out the conditions for inference to construct a 95% confidence interval for the proportion of atheists in the United States in 2012. Are you confident all conditions are met?
+
+Recall that for proportions, there are two key conditions required for us to assume that the sampling distribution for $\hat{p}$, taken from a sample of size $n$ from a population with a true proportion $p$, is nearly normal (i.e., that if we were to repeat this experiment a million times, the resultant distribution of proportions would be normally distributed)
+
+Condition 1: the sample observations are independent and
+Condition 2: We expected to see at least 10 successes and 10 failures in our sample, i.e. $np ≥ 10$ and $n(1 − p) ≥ 10$. 
+
+Both conditions are satisfied here. 
+
+
+If the conditions for inference are reasonable, we can either calculate
+the standard error and construct the interval by hand, or allow the `prop.test`
+function (the proportional analogue to the `t.test` function) to do it for us.
+
+```{r us-atheism-ci, eval=TRUE, tidy = TRUE}
+#prop.test syntax: pop.test(successes,totaltrials)
+prop.test(sum(us12$response=="atheist"),length(us12$response))
+```
+
+Note that since the goal is to construct an interval estimate for a 
+proportion, it's necessary to specify what constitutes a "success", which here 
+is a response of `"atheist"`.
+
+Although formal confidence intervals and hypothesis tests don't show up in the 
+report, suggestions of inference appear at the bottom of page 7: "In general, 
+the error margin for surveys of this kind is $\pm$ 3-5% at 95% confidence".
+
+6.  Based on the R output, what is the margin of error for the estimate of the 
+    proportion of the proportion of atheists in US in 2012?
+    
+```{r eval=TRUE}
+pbar = sum(us12$response=="atheist")/length(us12$response) #estimate of proportion
+SE = sqrt(pbar*(1-pbar)/length(us12$response)) # standard error of estimate
+E = qnorm(.975)*SE #margin of error
+pbar + c(-E, E) 
+```
+
+7.  Calculate confidence intervals for the proportion of atheists in 2012 in two other countries of your choice, and report the associated margins of error. Be sure to note whether the conditions for inference are met.
+
+```{r}
+aus12 <- atheism %>% filter(nationality=='Australia',year=='2012');table(aus12$response)
+belg12 <- atheism %>% filter(nationality=='Belgium',year=='2012');table(belg12$response)
+```
+
+Here I pick Australia and Belgium. You can see that there are ate least 10 of each response for both, and again it is reasonable to assume independence here. 
+
+```{r}
+pbar = sum(aus12$response=="atheist")/length(aus12$response) #estimate of proportion
+SE = sqrt(pbar*(1-pbar)/length(aus12$response)) # standard error of estimate
+E = qnorm(.975)*SE #margin of error
+pbar + c(-E, E) 
+```
+
+I am 95% confident that the true proportion of atheists in Australia is between 0.08 and 0.12. 
+
+```{r}
+pbar = sum(belg12$response=="atheist")/length(belg12$response) #estimate of proportion
+SE = sqrt(pbar*(1-pbar)/length(belg12$response)) # standard error of estimate
+E = qnorm(.975)*SE #margin of error
+pbar + c(-E, E) 
+```
+
+I am 95% confident that the true proportion of atheists in Belgium is between 0.056 and 0.103.
+
+
+### How does the proportion affect the margin of error?
+
+Imagine you've set out to survey 1000 people on two questions: are you female? 
+and are you left-handed? Since both of these sample proportions were calculated from the same sample size, they should have the same margin of error, right? Not so much. While the margin of error does change with sample size, it is also affected by the proportion.
+
+Think back to the formula for the standard error: $SE = \sqrt{p(1-p)/n}$. This 
+is then used in the formula for the margin of error for a 95% confidence 
+interval: $ME = 1.96\times SE = 1.96\times\sqrt{p(1-p)/n}$. Since the 
+population proportion $p$ is in this $ME$ formula, it should make sense that 
+the margin of error is in some way dependent on the population proportion. We 
+can visualize this relationship by creating a plot of $ME$ vs. $p$.
+
+The first step is to make a vector `p` that is a sequence from 0 to 1 with 
+each number separated by 0.01. We can then create a vector of the margin of 
+error (`me`) associated with each of these values of `p` using the familiar 
+approximate formula ($ME = 2 \times SE$). Lastly, we plot the two vectors 
+against each other to reveal their relationship.
+
+```{r me-plot, eval=TRUE}
+n <- 1000
+p <- seq(0, 1, 0.01)
+me <- 2 * sqrt(p * (1 - p)/n)
+plot(me ~ p, ylab = "Margin of Error", xlab = "Population Proportion")
+```
+
+8.  Describe the relationship between `p` and `me`.
+
+
+We can see that as the proportion within a population gets closer to 50/50, the margin of error goes up slightly. As we get towards either extreme, it trends down.
+
+## Success-failure condition
+
+For inference on proportions, the sample proportion can be assumed to be nearly normal if it is based upon a random sample of independent observations and if both $np \geq 10$ and $n(1 - p) \geq 10$. This rule of thumb is easy enough to follow, but it makes one wonder: what's so special about the number 10? The short answer is: nothing. You could argue that we would be fine with 9 or 
+that we really should be using 11. What is the "best" value for such a rule of 
+thumb is, at least to some degree, arbitrary. However, when $np$ and $n(1-p)$ 
+reaches 10 the sampling distribution is sufficiently normal to use confidence 
+intervals and hypothesis tests that are based on that approximation.
+
+We can investigate the interplay between $n$ and $p$ and the shape of the 
+sampling distribution by using simulations. To start off, we simulate the 
+process of drawing 5000 samples of size 1040 from a population with a true 
+atheist proportion of 0.1. For each of the 5000 samples we compute $\hat{p}$ 
+and then plot a histogram to visualize their distribution.
+
+```{r  eval=TRUE}
+p <- 0.1
+n <- 1040
+p_hats <- rep(0, 5000)
+
+for(i in 1:5000){
+  samp <- sample(c("atheist", "non_atheist"), n, replace = TRUE, prob = c(p, 1-p))
+  p_hats[i] <- sum(samp == "atheist")/n
+}
+
+hist(p_hats, main = "p = 0.1, n = 1040", xlim = c(0, 0.18))
+```
+
+These commands build up the sampling distribution of $\hat{p}$ using the 
+familiar `for` loop. You can read the sampling procedure for the first line of 
+code inside the `for` loop as, "take a sample of size $n$ with replacement 
+from the choices of atheist and non-atheist with probabilities $p$ and $1 - p$,
+respectively." The second line in the loop says, "calculate the proportion of 
+atheists in this sample and record this value." The loop allows us to repeat 
+this process 5,000 times to build a good representation of the sampling 
+distribution.
+
+9.  Describe the sampling distribution of sample proportions at $n = 1040$ and 
+    $p = 0.1$. Be sure to note the center, spread, and shape.
+    
+The sampling distribution is approximately normally distributed; as expected, it is centered on the "true" value 0.10. It is relatively clustered around the true value, with short tails and a high center. 
+
+10. Repeat the above simulation three more times but with modified sample
+    sizes and proportions: for $n = 400$ and $p = 0.1$, $n = 1040$ and 
+    $p = 0.02$, and $n = 400$ and $p = 0.02$. Plot all four histograms
+    together by running the `par(mfrow = c(2, 2))` command before creating the 
+    histograms. You may need to expand the plot window to accommodate the 
+    larger two-by-two plot. Describe the three new sampling distributions. 
+    Based on these limited plots, how does $n$ appear to affect the 
+    distribution of $\hat{p}$? How does $p$ affect the sampling distribution?
+
+```{r  eval=TRUE}
+p1 <- 0.1
+n1 <- 1040
+p_hats1 <- rep(0, 5000)
+
+for(i in 1:5000){
+  samp <- sample(c("atheist", "non_atheist"), n1, replace = TRUE, prob = c(p1, 1-p1))
+  p_hats1[i] <- sum(samp == "atheist")/n
+}
+
+p2 <- 0.1
+n2 <- 400
+p_hats2 <- rep(0, 5000)
+
+for(i in 1:5000){
+  samp <- sample(c("atheist", "non_atheist"), n2, replace = TRUE, prob = c(p2, 1-p2))
+  p_hats2[i] <- sum(samp == "atheist")/n
+}
+
+p3 <- 0.02
+n3 <- 1040
+p_hats3 <- rep(0, 5000)
+
+for(i in 1:5000){
+  samp <- sample(c("atheist", "non_atheist"), n3, replace = TRUE, prob = c(p3, 1-p3))
+  p_hats3[i] <- sum(samp == "atheist")/n
+}
+
+p4 <- 0.02
+n4 <- 400
+p_hats4 <- rep(0, 5000)
+
+for(i in 1:5000){
+  samp <- sample(c("atheist", "non_atheist"), n4, replace = TRUE, prob = c(p4, 1-p4))
+  p_hats4[i] <- sum(samp == "atheist")/n
+}
+par(mfrow=c(2,2))
+hist(p_hats1, main = "p = 0.1, n = 1040", xlim = c(0, 0.18))
+hist(p_hats2, main = "p = 0.1, n = 400", xlim = c(0, 0.18))
+hist(p_hats3, main = "p = 0.02, n = 1040", xlim = c(0, 0.18))
+hist(p_hats4, main = "p = 0.02, n = 400", xlim = c(0, 0.18))
+```
+
+What we observe in these plots is that as $p$ gets close to zero, the distribution becomes truncated on the left side (and thus is not a symmetric, approximately normal distirbution). Further, as predicted by our plot comparing margin-of-error and $p$ above, the lower $p$ reduces the spread around the center. We also observe that the larger samples perform better, particularly for the small $p$ value. 
+
+Once you're done, you can reset the layout of the plotting window by using the 
+command `par(mfrow = c(1, 1))` command or clicking on "Clear All" above the 
+plotting window (if using RStudio). Note that the latter will get rid of all 
+your previous plots.
+
+11. If you refer to Table 6, you'll find that Australia has a sample 
+    proportion of 0.1 on a sample size of 1040, and that Ecuador has a sample 
+    proportion of 0.02 on 400 subjects. Let's suppose for this exercise that 
+    these point estimates are actually the truth. Then given the shape of 
+    their respective sampling distributions, do you think it is sensible to 
+    proceed with inference and report margin of errors, as the reports does?
+  
+We already went ahead and tested Australia, so I am feeling pretty good about it. On the other hand, as we saw in the plot we just made, it is perhaps inappropriate to make the same assumption about Ecuador. This is a borderline case, however, since as we could see in the 4th panel, the distribution appears to be only barely truncated. 
+
+
+The question of atheism was asked by WIN-Gallup International in a similar 
+survey that was conducted in 2005. (We assume here that sample sizes have 
+remained the same.) Table 4 on page 13 of the report summarizes survey results 
+from 2005 and 2012 for 39 countries.
+
+12. Is there convincing evidence that Spain has seen a change in its atheism index between 2005 and 2012? *Hint:* Create a new data set for respondents from Spain. You could do this manually by forming confidence intervals for the true proportion of athiests in both years, and determine whether they overlap, or by using the `prop.test` command again to do a 2-sample test for equality of proportions...
+
+```{r eval=TRUE}
+spain2005 =  atheism %>% filter(nationality=='Spain',year=='2005')
+spain2012 =  atheism %>% filter(nationality=='Spain',year=='2012')
+
+sp05x = sum(spain2005$response=='atheist')
+sp12x = sum(spain2012$response=='atheist')
+
+prop.test(x=c(sp05x,sp12x),n = c(nrow(spain2005),nrow(spain2012)))
+```
+
+13. Is there convincing evidence that the United States has seen a change in its atheism index between 2005 and 2012? (do something similar to what you did in problem 12)
+
+```{r eval=TRUE}
+us2005 =  atheism %>% filter(nationality=='United States',year=='2005')
+us2012 =  atheism %>% filter(nationality=='United States',year=='2012')
+
+us05x = sum(us2005$response=='atheist')
+us12x = sum(us2012$response=='atheist')
+prop.test(x=c(us05x,us12x),n = c(nrow(us2005),nrow(us2012)))
+```
+
+14. If in fact there has been no change in the atheism index in the countries listed in Table 4, in how many of those countries would you expect to detect a change (at a significance level of 0.05) simply by chance?
+
+We would expect 5% of the countries to demonstrate a change. 
+
+# ANOVA
+
+## One-way ANOVA
+
+To try out a one-way ANOVA, we are going to work with data from the General Social Survey concerning vocabulary test scores (variable `wordsum`) and self-reported class (`class`). 
+
+```{r eval=TRUE}
+gss = read.csv('input/gss_wordsum_class.csv')
+```
+
+In these data, we have a numerical response variable (score on vocabulary test) and a
+categorical explanatory variable (class). Since class has four levels, comparing average scores across the levels of the class variable requires ANOVA. To run an ANOVA in R, we can use:
+
+```{r eval=TRUE}
+summary(aov(wordsum~class,gss))
+```
+
+Note that we can also use the linear model syntax, which you will learn more about next week, to do the same thing:
+
+```{r eval=FALSE}
+summary.aov(lm(wordsum~class,gss))
+```
+
+In any case, this ANOVA table looks just like the one from lecture. Since the p-value is low, we reject $H_0$ and conclude that there is evidence that at least one pair of means are different. If we want to know how to pursue the root(s) of this significant difference, we can use pairwise comparisons:
+
+```{r eval=TRUE}
+pairwise.t.test(x=gss$wordsum,g = gss$class,p.adjust.method = 'bonf')
+```
+
+Be sure to set the correction to Bonferroni (my favorite because it's fun to say!). 
+
+15. Calculate the modified \alpha ($\alpha^*$) to be used for these tests (you can probably do this pretty easily by hand by referring back to the lecture, but you can also use the `p.adjust` function). 
+
+```{r}
+0.05 / 6
+```
+
+16. Conduct a similar analysis on the world basic demography statistics dataset (`wdata.csv`) to see if there is a significant difference in male and female life expectancy by region (`leM` and `leF`, respectively)
+
+```{r eval=TRUE}
+wdata = read.csv('input/wdata.csv')
+```
+
+## Two-way ANOVA
+
+We can also use ANOVA to evaluate two-way research designs. The following data set is available in R as the `ToothGrowth` data. In this study, the response is the length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1, and 2 mg) with each of two delivery methods (orange juice or ascorbic acid). Once data are loaded into R, we need to convert the `dose` variable into a factor. Note that the `ToothGrowth$dose <- factor(ToothGrowth$dose)` command will not allow R to treat it as a factor with ordered levels, but let's ignore this for the purpose of this exercise.
+
+```{r load2}
+data(ToothGrowth)
+ToothGrowth$dose <- factor(ToothGrowth$dose)
+fm <- len ~ supp * dose
+replications(fm, data=ToothGrowth)
+f <- function(x) c(mean=mean(x), sd=sd(x))
+aggregate(fm, ToothGrowth, f)
+```
+
+Since we know that we will be using the basic formula `len ~ supp * dose`, we stored it in a dedicated variable. Indeed, the object of the analysis will be to study the variation of teeth length as a function of Vitamin C dose and delivery method, and their interaction. This formula expands to `len ~ supp + dose + supp:dose`. The `replications()` command is useful to check if the design is balanced or not, and how many observations are available in each treatment. It is fairly easy to pass any custom function to the `aggregate()` command; in this case, we just wrote a little helper function that returns the mean and standard deviation of a vector of values. The `aggregate()` command will take care of applying this function to each chunk of data.
+
+The full model for the ANOVA can be estimated using the following commands:
+```{r aov2}
+aov.fit <- aov(fm, data=ToothGrowth)
+summary(aov.fit)
+```
+
+As can be seen, all effects are significant at the 5% level, in particular the interaction term. This means that it will be difficult to interpret any single effect without taking into account that both factors are interacting together.
+
+The interaction effect is summarized below:
+```{r effects}
+model.tables(aov.fit, type="means", se=TRUE, cterms="supp:dose")
+```
+
+### Example
+
+Let's consider a study about the effects of smoking on cognitive performance. The authors used three different tasks that differed according to the level of cognitive treatment required to execute them. Each task was performed was performed by different subjects. The first task was a pattern identification task, which consisted in locating a target presented on a computer screen. The second task was a cognitive task where subjects were asked to read some text and recall it afterwards. The third task consisted in a videogame driving simulation. In each condition, the dependent variable was the number of errors made by the subject. 
+
+Subjects were then divided in three groups, depending on their level of exposure to tobacco. The FA group consisted of people who were actively smoking during the execution of the task or just before. The FP group included subjects who had not smoked for three hours prior to the execution of the task. The NF group was composed of usual smokers. Data are available at the link "https://raw.githubusercontent.com/cogmaster-stats/r-cogstats/master/data/tab13-tabagisme.dat"
+
+```{r eval=TRUE}
+task.df = read.table('https://raw.githubusercontent.com/cogmaster-stats/r-cogstats/master/data/tab13-tabagisme.dat')
+names(task.df) <- c("task", "group", "error")
+task.df$task <- factor(task.df$task, labels = c("ident", "cogn", "simul"))
+```
+
+18. Conduct a two-way ANOVA analysis on to see whether there is a significant difference in by task and group. 
+- (a) Compute mean and standard deviation of each treatment.
+
+```{r}
+task.df %>% group_by(task,group) %>% summarise(group.mean = mean(error,na.rm=T),group.sd =sd(error,na.rm=T))
+```
+- (b) Draw a boxplot of individual responses by task, for each smoking type.
+
+```{r message = FALSE}
+par(mfrow=c(1,1))
+library(ggplot2)
+ggplot(task.df,aes(x=as.factor(task),y=error)) + geom_boxplot() + facet_wrap(~group)
+```
+
+- (c) Perform a two-way ANOVA (`error ~ task * group`), and comment the results.
+
+```{r}
+amod <- aov(error ~ task * group,data = task.df)
+summary(amod)
+```
+
+Here we find something interesting - we find differences between the groups, but the primary differences are in terms of the task and task*group interactions. In other words, there is insufficient evidence that the groups differ when wholly pooled, but when we compare the groups in terms of tasks within groups, then significant differences arise.
+
+- (d) Summarize simple effects for the `task` factor.
+
+# Chi-square tests of association
+
+## Association Tests
+
+The statistical tests we have covered up to now leave out a substantial portion of life science projects. Specifically, we are referring to data that is binary, categorical and ordinal. To give a very specific example, consider genetic data where you have two genotypes (AA/Aa or aa) for cases and controls for a given disease. The statistical question is if genotype and disease are associated. As in the examples we have been studying, we have two populations: AA/Aa and aa and numeric data for each. So why can't we perform a t-test? Note that the data is either 0 (control) or 1 (cases). It is pretty clear that this data is not normally distributed so the t-distribution approximation is certainly out of the question. We could use CLT if the sample size is large enough; otherwise we can use association tests.
+
+### Example 1
+
+One of the most famous examples of hypothesis testing was performed by R.A. Fisher. A person he knew claimed she could tell if milk was added before or after tea was poured. Fisher gave the lady four pairs of cups of tea: one with milk poured first, the other after. The order was randomized. Say the lady picked 3 out 4 correctly, do we believe she has a special ability? Hypothesis testing helps answer this question by quantifying what happens by chance.
+
+The basic question we ask is: if the lady is actually guessing, what are the chances that she gets 3 or more correct? Just as we have done before we can compute a probability under the null hypothesis that she is guessing four of each. If we assume this null hypothesis, we can think of this particular examples as picking 4 balls out of an urn with 4 green (correct answer) and 4 red (incorrect answer) balls. 
+
+Under the null hypothesis that the lady is simply guessing, each ball has the same chance of being picked. We can then use combinatorics to figure out the probability. The probability of picking 3 is ${4 \choose 3} {4 \choose 1} / {8 \choose 4} = 16/70$. The probability of picking all correct is ${4 \choose 4} {4 \choose 0}/{8 \choose 4}= 1/70$. Thus the chance of observing a 3 or something more extreme, under the null hypothesis, is 0.24. This is called a p-value. The procedure that produced this p-value is called Fisher's exact test and it uses the hypergeometric distribution.
+
+#### Two by Two Tables
+
+The data from the experiment above can be summarized by a 2 by 2 table:
+
+```{r}
+tab <- matrix(c(3,1,1,3),2,2)
+rownames(tab)<-c("Poured Before","Poured After")
+colnames(tab)<-c("Guessed before","Guessed after")
+tab
+```
+
+The function `fisher.test` performs the calculations above and can be obtained like this:
+
+```{r}
+fisher.test(tab,alternative="greater")
+```
+
+### Chi-square Test
+
+Genome-wide association studies (GWAS) have become ubiquitous in Biology. One of the main statistical summaries used in these studies are Manhattan plots. The y-axis of a Manhattan plot typically represents the negative of log (base 10) of the p-values obtained for association tests applied at millions of single nucleotide polymorphisms (SNP). These p-values are obtained in a similar way to the test performed on the tea tasting lady. However, in that example the number of green and red balls is experimentally fixed and the number of answers given for each category is also fixed. Another way to say this is that the sum of the rows and the sum of the columns are fixed. This defines constraints on the possible ways we can fill the 2 by 2 table and also permits us to use the hypergeometric distribution. In general, this is not the case. Nonetheless, there is another approach, the Chi-squared test, which described below.
+
+Imagine we have 280 individuals, some of them have a given disease and the rest do not. We observe that 20% of the individuals that are homozygous for the minor allele (aa) have the disease compared to 10% of the rest. Would we see this again if we picked another 220 individuals?
+
+Let's create an dataset with these percentages:
+
+```{r}
+disease=factor(c(rep(0,180),rep(1,20),rep(0,40),rep(1,10)),
+               labels=c("control","cases"))
+genotype=factor(c(rep("AA/Aa",200),rep("aa",50)),
+                levels=c("AA/Aa","aa"))
+dat <- data.frame(disease, genotype)
+dat <- dat[sample(nrow(dat)),]##shuffle them up
+head(dat)
+```
+
+To create the appropriate two by two table, we will use the function `table`. This function tabulates the frequency of each level in a factor. For example:
+
+```{r}
+table(genotype)
+table(disease)
+```
+
+If you you feed the function two factors, it will tabulate all possible pairs and thus create the two by two table:
+
+```{r}
+tab <- table(genotype,disease)
+tab
+```
+
+Note that you can feed `table` $n$ factors and it will tabulate all $n$-tables.
+
+The typical statistics we use to summarize these results is the odds ratio (OR). We compute the odds of having the disease if you are an "aa": 10/40, the odds of having the disease if you are an "AA/Aa": 20/180, and take the ratio: $(10/40) / (20/180)$ 
+
+```{r}
+(tab[2,2]/tab[2,1]) / (tab[1,2]/tab[1,1])
+```
+
+To compute a p-value we don't use the OR directly. We instead assume that there is no association between genotype and disease, and then compute what we expect to see in each cell. Under the null hypothesis, the group with 200 individuals and the group with 50 individuals were each randomly assigned the disease with the same probability. If this is the case, then the probability of disease is:
+
+```{r}
+p=mean(disease=="cases")
+p
+```
+
+The expected table is therefore:
+
+```{r}
+expected <- rbind(c(1-p,p)*sum(genotype=="AA/Aa"),
+                  c(1-p,p)*sum(genotype=="aa"))
+dimnames(expected)<-dimnames(tab)
+expected
+```
+
+The Chi-square test uses an asymptotic result (similar to CLT) related to the sums of independent binary outcomes. Using this approximation, we can compute the probability of seeing a deviation from the expected table as big as the one we saw. The p-value for this table is: 
+
+```{r}
+chisq.test(tab)$p.value
+```
+
