@@ -52,7 +52,7 @@ us best predict a team's runs scored in a season.
 
 Let's load up the data for the 2011 season.
 
-```{r load-data, eval=FALSE}
+```{r load-data, eval=TRUE}
 load("input/mlb11.RData")
 ```
 
@@ -69,10 +69,19 @@ work with the newer variables on your own.
     you knew a team's `at_bats`, would you be comfortable using a linear model 
     to predict the number of runs?
 
+We just need a scatter plot for this:
+
+```{r}
+plot(runs~at_bats,data=mlb11)
+```
+
+Looks like there is an upward linear trend.
+
+
 If the relationship looks linear, we can quantify the strength of the
 relationship with the correlation coefficient.
 
-```{r cor, eval=FALSE}
+```{r cor, eval=TRUE}
 cor(mlb11$runs, mlb11$at_bats)
 ```
 
@@ -87,13 +96,15 @@ such as `runs` and `at_bats` above.
     between these two variables. Make sure to discuss the form, direction, and 
     strength of the relationship as well as any unusual observations.
 
+Based upon the scatter plot above, it appears that at bats are positively related to runs scored. While there appears to be relatively high variance (for instance, look at the spread of teams with about 5525 at bats), in general there seems to be a consistent linear relationships. 
+
 Just as we used the mean and standard deviation to summarize a single variable, 
 we can summarize the relationship between these two variables by finding the 
 line that best follows their association. Use the following interactive 
 function to select the line that you think does the best job of going through 
 the cloud of points.
 
-```{r plotss-atbats-runs, eval=FALSE}
+```{r plotss-atbats-runs, eval=TRUE}
 plot_ss(x = mlb11$at_bats, y = mlb11$runs)
 ```
 
@@ -129,7 +140,7 @@ line that minimizes the sum of squared residuals, through trial and error.
 Instead we can use the `lm` function in R to fit the linear model (a.k.a. 
 regression line).
 
-```{r m1, eval=FALSE}
+```{r m1, eval=TRUE}
 model_atbats <- lm(runs ~ at_bats, data = mlb11)
 ```
 
@@ -142,7 +153,7 @@ The output of `lm` is an object that contains all of the information we need
 about the linear model that was just fit. We can access this information using 
 the summary function.
 
-```{r summary-m1, eval=FALSE}
+```{r summary-m1, eval=TRUE}
 summary(model_atbats)
 ```
 
@@ -168,15 +179,18 @@ explained by at-bats. $R^2$ isn't great, for reasons that we will talk about, bu
     slope tell us in the context of the relationship between success of a team 
     and its home runs?
     
-```{r eval=FALSE}
+```{r eval=TRUE}
 model_homeruns = lm(runs ~ homeruns, data = mlb11)
+summary(model_homeruns)
 ```
+
+The regression equation is: $y_i = 415.24 + 1.83 * Homeruns$. In other words, there is a positive relationship between homeruns hit and runs scored (causal in this case), as each home run predicts a 1.83 run increase in total runs scored. Thus, as we might expect, all else equal hitting more homeruns makes a team more successful.
 
 ## Prediction and prediction errors
 
 Let's create a scatterplot with the least squares line laid on top.
 
-```{r reg-with-line, eval=FALSE}
+```{r reg-with-line, eval=TRUE}
 plot(mlb11$runs ~ mlb11$at_bats)
 abline(model_atbats)
 ```
@@ -203,23 +217,70 @@ model_atbats$coefficients[1] + model_atbats$coefficients[2] * 5578
 predict(model_atbats,newdata = data.frame('at_bats' = 5578))
 ```
 
+Due to the setup of the OLS model, the residual for a prediction is 0 (since each prediction falls right on then linear least-squares line). 
+
 6. Choose another traditional variable from `mlb11` that you think might be a good predictor of `runs`. Produce a scatterplot of the two variables and fit a linear model. At a glance, does there seem to be a linear relationship?
+
+```{r}
+plot(runs~bat_avg,data=mlb11)
+batavgmod <- lm(runs ~ bat_avg,data=mlb11)
+abline(batavgmod)
+summary(batavgmod)
+```
+
+There is a clear linear relationship between batting average and runs scored. Why is the coefficent so crazy? This is a good example of the need to thank carefully about the construct of your variable. Batting average is a ratio between 0 (no hits) and 1 (hit every time); a basic linear regression estimates the marginal impact of a one-unit increase in X. Thus, the coefficient for batting average shows that a 1.00 unit increase in batting average will increase runs scored by 5242.2. However, it is impossible to have a 1.00 unit increase in batting average; moreover, if you look at the scatterplot all batting averages fall within a small range between 0.200 and 0.300. Thus, while it will not change the statistical significance of the model, for presentation and interpretation it makes sense to scale the `bat_avg` variable. Multiplying the original varible by 100 will give us an interpretation of "each percentage point increase in batting average", which is intuitive and straightforward. Note, however, that you could have accomplished this simply by dividing the original coefficient by 100. 
+
+```{r}
+mlb11$bat_avg100 = mlb11$bat_avg*100
+plot(runs~mlb11$bat_avg100,data=mlb11)
+batavgmod <- lm(runs ~ bat_avg100,data=mlb11)
+abline(batavgmod)
+summary(batavgmod)
+```
+
 
 7. How does this relationship compare to the relationship between `runs` and `at_bats`? Does your variable seem to predict `runs` better than `at_bats`? How can you tell?
 
-8. Now that you can summarize the linear relationship between two variables, investigate the relationships between `runs` and each of the other five traditional variables. Which variable best predicts `runs`? Support your conclusion using the graphical and numerical methods we've discussed. Note: find a way to do this that **does not** require you to type out 7 different models
+Batting average seems to be a better predictor of runs scored than homeruns. The batting average model has a higher F-statistic and a higher $R^2$ value. We can also use BIC/AIC to compare:
 
-```{r eval=FALSE}
+```{r}
+AIC(batavgmod,model_homeruns)
+BIC(batavgmod,model_homeruns)
+```
+
+In both cases, the batting average model performs slightly better.
+
+8. Now that you can summarize the linear relationship between two variables, investigate the relationships between `runs` and each of the other five traditional variables (i.e., variables without "new" in the name). Which variable best predicts `runs`? Support your conclusion using the graphical and numerical methods we've discussed. Note: find a way to do this that **does not** require you to type out 7 different models
+
+```{r eval=TRUE,message =FALSE}
+library(dplyr)
+forms = paste0('runs~',names(mlb11 %>% select(-team,-runs,-contains('new'))))
+model.results = lapply(forms,lm,data=mlb11)
+library(plyr)
+coef.df = ldply(model.results,coef) #use `ldply` in plyr package to make coefficient dataframe
+names(coef.df) = c('intercept','slope'); coef.df$x.variable = names(mlb11 %>% select(-team,-runs,-contains('new')))
+coef.df$AIC = lapply(model.results,AIC)
+coef.df
+```
+
+You can probably come up with a more efficient way of doing this than I did... In any case, it looks like batting average outperforms all other traditional variables. 
+
+9. Now examine the three newer variables. These are the statistics used by the A's as key indicators of success. In general, are they more or less effective at predicting runs than the old variables? Explain using appropriate graphical and numerical evidence. Of all ten variables we've analyzed, which seems to be the best predictor of `runs`? Using the limited (or not so limited) information you know about these baseball statistics, does your result make sense?
+
+I'm going to repeat the code above, but now include the "new" variables:
+
+```{r eval=TRUE,message =FALSE}
+library(dplyr)
 forms = paste0('runs~',names(mlb11 %>% select(-team,-runs)))
 model.results = lapply(forms,lm,data=mlb11)
+library(plyr)
 coef.df = ldply(model.results,coef) #use `ldply` in plyr package to make coefficient dataframe
 names(coef.df) = c('intercept','slope'); coef.df$x.variable = names(mlb11 %>% select(-team,-runs))
 coef.df$AIC = lapply(model.results,AIC)
+coef.df
 ```
 
-You can probably come up with a more efficient way of doing this than I did...
-
-9. Now examine the three newer variables. These are the statistics used by the A's as key indicators of success. In general, are they more or less effective at predicting runs than the old variables? Explain using appropriate graphical and numerical evidence. Of all ten variables we've analyzed, which seems to be the best predictor of `runs`? Using the limited (or not so limited) information you know about these baseball statistics, does your result make sense?
+As you can see, the new statistics dramatically outperform traditional ones. The AIC values for onbase, slug, and obs are WAY lower. It appears that `obs` is the best predictor of runs. This makes sense, since `obs` captures all of the different ways a team can get on base (e.g., hits AND walks). 
 
 ##Example 2: "Advances in Development Reverse Fertility Declines"
 
@@ -235,14 +296,14 @@ nature = read.csv('input/nature08230-s2.csv')
 
 12. Drop all but the HDI and TFR for 1975 and 2005 (use dplyr)
 
-```{r message=FALSE,warning=FALSE,message=FALSE}
+```{r message=FALSE,warning=FALSE}
 library(dplyr)
 nature <- nature %>% select(country,HDI.1975,HDI.2005,TFR.1975,TFR.2005)
 ```
 
 13. Explore the dataset. Make some plots. Do some calculations. What do you see?
 
-```{r, echo=FALSE,results='hide',message=FALSE,warning=FALSE}
+```{r, ,message=FALSE,warning=FALSE}
 library(ggplot2)
 ggplot(data = nature,aes(x=HDI.1975,y=TFR.1975)) + geom_point()
 ```
@@ -258,8 +319,14 @@ summary(model_hdi1975)
 
 16. Use the coefficient in a sentence.  
 
+The scatter plot we drew shows a fairly clear negative linear relationship. Baed upon the the model results, a one-unit increase in a country's human development index score is predicted to decrease the total fertility rate by 9.6. 
+
+
 17. Interpret the constant.  
  
+The constant is the estimated TFR when HDI is equal to zero (i.e., not a realistic possibility). In any case, then HDI = 0, the constant predicts that TFR will be 10.9. 
+
+
 ## Notes about an lm() Object
 
 - lm() doesn't just spit out values, it stores anything you could ever need  
@@ -289,17 +356,55 @@ ggplot(data=resid1975.df) + geom_point(aes(x=.fitted,y=.resid))
 
 18. Return to the original HDI-TFR scatter plot and add the 2005 data to your scatter plot in red (change the axis titles and see if you can add a legend to make this new figure more "publishable")
 
+```{r warning=FALSE,message=FALSE}
+ggplot(data = nature,aes(x=HDI.1975,y=TFR.1975)) + geom_point() + 
+  geom_point(data = nature,aes(x=HDI.2005,y=TFR.2005),col='red') 
+```
+
 19. Perform the HDI on TFR regression for 2005 data.  
+
+```{r eval=TRUE,message=FALSE,warning=FALSE}
+model_hdi2005 = lm(TFR.2005~HDI.2005,data=nature)
+```
 
 20. Add the new regression line to your plot.  
 
+```{r warning=FALSE,message=FALSE}
+ggplot(data = nature,aes(x=HDI.1975,y=TFR.1975)) + geom_point() + 
+  geom_abline(aes(slope=model_hdi1975$coefficients[2],intercept = model_hdi1975$coefficients[1]))+
+geom_point(data = nature,aes(x=HDI.2005,y=TFR.2005),col='red') +
+geom_abline(
+  aes(intercept = model_hdi2005$coefficients[1],slope=model_hdi2005$coefficients[2]),col='red')
+```
+
 21. Did the relationship change from 1975 to 2005?   
+
+```{r message = FALSE}
+library(texreg)
+screenreg(list(model_hdi1975,model_hdi2005))
+```
+
+The relationship changed somewhat, as the slope decreased in magnitude (i.e., moved closer to zero). Overall, however, the basic relationship seems to be about the same; what we observe in the plot is that HDI has increased on the whole, and TFR has decreased on the whole, so the intercept is really what shifted (althought you might also notice the cluster of high HDI countries at the far right, which perhaps indicates that a different model would be preferable for the 2005 data).
+
 
 22. Make some aesthetic improvements to the graph
 
+```{r warning=FALSE,message=FALSE}
+ggplot(data = nature,aes(x=HDI.1975,y=TFR.1975)) + geom_point() + 
+  geom_abline(aes(slope=model_hdi1975$coefficients[2],intercept = model_hdi1975$coefficients[1]))+
+geom_point(data = nature,aes(x=HDI.2005,y=TFR.2005),col='red') +
+geom_abline(
+  aes(intercept = model_hdi2005$coefficients[1],slope=model_hdi2005$coefficients[2]),col='red') + 
+  theme_bw() + 
+  ylab('Total Fertility Rate') + xlab('Human Development Index')
+```
+
+
 23. Make a new scatter plot of the residuals versus the fitted values for the 2005 data.
  
- 
+```{r}
+plot(rstandard(model_hdi2005)~fitted(model_hdi2005))
+```
  
  
  
