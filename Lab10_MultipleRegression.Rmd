@@ -147,8 +147,7 @@ p + geom_abline(aes(slope=m_bty$coef[2],intercept=m_bty$coef[1]))
 
 
 6.  Use residual plots to evaluate whether the conditions of least squares
-    regression are reasonable. Provide plots and comments for each one (see
-    Lab 9 if you need a reminder of how to make these).
+    regression are reasonable.
 
 ```{r scatter-score-bty_avg-resid, eval = FALSE}
 plot(fortify(m_bty)$.resid ~ fortify(m_bty)$.fitted)
@@ -199,7 +198,11 @@ name change whenever you introduce a categorical variable. The reason is that R
 recodes `gender` from having the values of `female` and `male` to being an 
 indicator variable called `gendermale` that takes a value of $0$ for females and
 a value of $1$ for males. (Such variables are often referred to as "dummy" 
-variables.)
+variables.) The decision to call the indicator variable `gendermale` instead of`genderfemale`
+has no deeper meaning. R simply codes the category that comes first 
+alphabetically as a $0$. (You can change the reference level of a categorical 
+variable, which is the level that is coded as a 0, using the`relevel` function. 
+Use `?relevel` to learn more.)
 
 As a result, for females, the parameter estimate is multiplied by zero, leaving 
 the intercept and slope form familiar from simple regression.
@@ -222,11 +225,7 @@ multiLines(m_bty_gen)
     who received the same beauty rating, which gender tends to have the
     higher course evaluation score?
 
-The decision to call the indicator variable `gendermale` instead of`genderfemale`
-has no deeper meaning. R simply codes the category that comes first 
-alphabetically as a $0$. (You can change the reference level of a categorical 
-variable, which is the level that is coded as a 0, using the`relevel` function. 
-Use `?relevel` to learn more.)
+
 
 9. Create a new model called `m_bty_rank` with `gender` removed and `rank` 
     added in. How does R appear to handle categorical variables that have more 
@@ -462,20 +461,11 @@ summary(m_full)
     determine the best model. Write out the linear
     model for predicting score based on the final model you settle on.
 
-17. Verify that the conditions for this model are reasonable using diagnostic 
-    plots.
-
-18. The original paper describes how these data were gathered by taking a
-    sample of professors from the University of Texas at Austin and including 
-    all courses that they have taught. Considering that each row represents a 
-    course, could this new information have an impact on any of the conditions 
-    of linear regression?
-
-19. Based on your final model, describe the characteristics of a professor and 
+17. Based on your final model, describe the characteristics of a professor and 
     course at University of Texas at Austin that would be associated with a high
     evaluation score.
 
-20. Would you be comfortable generalizing your conclusions to apply to professors
+18. Would you be comfortable generalizing your conclusions to apply to professors
     generally (at any university)? Why or why not?
 
  
@@ -569,7 +559,7 @@ As with the line, it is well defined that this is the best fit plane to the whol
 
 Thankfully, prediction with multiple regression is basically the same as prediction in bivariate regression, albeit with more algebra involved. Because there can be many terms involved, you are better off using R's `predict` function instead of manual calculation.
 
-21. What is the predicted income for someone whose father has 12 years of education and who has 12 years of education? If we just use `predict(my.lm)` R will give you the fitted value for each observation. In order to make a prediction for this new observation, we need to make a new dataframe:
+19. What is the predicted income for someone whose father has 12 years of education and who has 12 years of education? If we just use `predict(my.lm)` R will give you the fitted value for each observation. In order to make a prediction for this new observation, we need to make a new dataframe:
 
 
 ```{r}
@@ -578,7 +568,8 @@ new.observation = data.frame('paeduc' = 12,'educ'=12)
 predict.lm(my.lm,newdata = new.observation)
 ```
 
-22. What is the predicted income for someone whose father has 20 years of education and who has 0 years of education?
+20. What is the predicted income for someone whose father has 20 years of education and who has 0 years of education?
+
 
 # Multicollinearity
 
@@ -648,7 +639,6 @@ summary(m2)
 vif(m2)
 ```
 
-23. Go back to the professor rating data - assess any potential multicollinearity amongst variables and examine the VIFs. 
 
 # Goal check?
 
