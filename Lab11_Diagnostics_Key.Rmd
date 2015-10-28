@@ -1,0 +1,687 @@
+---
+title: "PADP8120_Lab11: Regression Diagnostics"
+author: "Tyler Scott"
+date: "2015-08-16 ![Creative Commons Attribution License](images/cc-by.png)"
+output:
+  html_document:
+    highlight: pygments
+    theme: cerulean
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
+---
+
+
+
+# Lab Topics
+
+Regression Diagnostics:
+ - Outlier, leverage, and influence
+ - added variable and marginal model plots
+
+##Goals:
+
+After this lab you will be able to:
+ - assess and diagnose the extent to which outlying observations are driving your results
+ - assess the impact of a given variablie within a multiple regression model
+
+## 
+This lab uses materials by 
+- Angela Dixon 
+- Andrew Bray
+- Andrew Bray and Mine Cetinkaya-Rundel
+- Brian Caffo, Jeff Leek, Roger Peng
+
+# The linear model:
+
+* Specified as $Y_i =  \sum_{k=1}^p X_{ik} \beta_j + \epsilon_{i}$
+* We'll also assume here that $\epsilon_i \stackrel{iid}{\sim} N(0, \sigma^2)$
+* Define the residuals as
+$e_i = Y_i -  \hat Y_i =  Y_i - \sum_{k=1}^p X_{ik} \hat \beta_j$
+* Our estimate of residual variation is $\hat \sigma^2 = \frac{\sum_{i=1}^n e_i^2}{n-p}$, the $n-p$ so that $E[\hat \sigma^2] = \sigma^2$
+
+# Model diagnostics
+
+To assess whether the linear model is reliable, we need to check for (1) 
+linearity, (2) nearly normal residuals, and (3) constant variability.
+
+Let's take a look the usage of "rail trails," which are trail systems that are built on old rail grades; we will explore the relationship between temperature and ridership. Load in the `RailTrail` data set in the `mosaicData` package:
+
+```{r echo = FALSE,message=FALSE,warnings=FALSE}
+require(mosaicData)
+data(RailTrail)
+```
+
+```{r}
+head(RailTrail)
+```
+
+
+1. Using a scatterplot, examine the bivariate relationship between ridership (`volume`) and high temperature that day (`hightemp`):
+
+```{r echo=FALSE,message=FALSE,warnings=FALSE}
+library(ggplot2)
+ggplot(RailTrail) + geom_point(aes(x=hightemp,y=volume))
+```
+
+2. What type of relationship do you observe? Does a linear model at least appear worth trying? What type of relationship *do you expect*?
+
+I certainly appears that the linear model is worth trying. It looks like there might be a bit of a curvilinear relationship at high temperature levels, as rideship appears to bo up to about 80 degrees and then decrease again, but we'll try a linear fit and go from there.
+
+3. Fit a bivariate regression of `volume` on `hightemp`
+
+```{r message=FALSE,warnings=FALSE}
+mod.rider <- lm(volume~hightemp,data=RailTrail)
+```
+
+4. Describe the estimated relationship between `volume` of ridership and the high temperature 
+`hightemp`.
+
+```{r}
+summary(mod.rider)
+```
+
+Each 1 degree increase in daily high temperature is predicted to increase ridership volume by 5.7 people, holding all other variables constant (though obviously there aren't other variables in this model).
+
+Test whether the conditions for regression appear reasonable:
+
+## Condition 1: Linearity
+
+*Linearity*: You already checked if the relationship between ridership and temperature is linear using a scatterplot. We should also verify this condition with a plot of the residuals vs. temperature. 
+
+```{r residuals}
+plot(rstandard(mod.rider) ~ RailTrail$hightemp)
+abline(h = 0, lty = 3)
+abline(h= 2,lty=2)
+abline(h=-2,lty=2)
+```
+
+
+6.  Is there any apparent pattern in the  plot? What does this indicate
+    about the linearity of the relationship between ridership and temperature?
+
+As we might have guess given the basic scatterplot, ridership appears to be be somewhat linear in high temperature, but it appears that the linear model does not perform well at very high or very low temperatures. Namely, the line basically overpredicts ridership every time at high and low temperatures, when in an ideal-fitting model the residuals would be distributed around zero at all levels of temperature.
+
+## Condition 2: Nearly Normal Residuals
+
+*Nearly normal residuals*: To check this condition, we can look at a histogram
+
+```{r hist-res, eval=TRUE}
+hist(mod.rider$residuals,breaks=10)
+```
+
+or a normal probability plot of the residuals.
+
+```{r qq-res, eval=TRUE}
+qqnorm(mod.rider$residuals)
+qqline(mod.rider$residuals)  # adds diagonal line to the normal prob plot
+
+
+mod.rider$fitted
+```
+
+7. How do these look to you?
+
+The histogram of residuals actually looks pretty good. There is a slight right skew,but overall the distribution of residuals does not evidence a major problem. The q-q plot helps illuminat the problem a little better, since it's clear that the residuals at either tail do not quite fit the linear model. Again though, recall that q-q plot tails don't even look perfect for simulated data from a known distribution, so again this is probably not evidence of a major problem. This is a good example of how you need to check for multiple modeling issues, since some diagnostics might look just fine even when others do not. 
+
+
+## Condition 3: Constant variability
+
+*Constant variability*: There are tests for heteroskedasticity, but generally you can use plots as a rough heuristic at least when doing preliminary fitting. Constant variability means that the variability of points around the regression line remains consistant for all values of X. To test this, we again use the plot of `residuals ~ independent variable` to check this, and also the `residuals ~ fitted values` plot:
+
+```{r constant variance, eval=TRUE}
+plot(mod.rider$residuals ~ RailTrail$hightemp)
+abline(h = 0, lty = 3)  # adds a horizontal dashed line at y = 0
+```
+
+```{r eval=TRUE}
+plot(mod.rider$residuals ~ mod.rider$fitted.values)
+abline(h = 0, lty = 3)  # adds a horizontal dashed line at y = 0
+```
+
+(they should look just about the same - why?)
+
+8.  Based on the plot, does the constant variability condition appear to 
+    be met?
+    
+It's not quite clear, but it doesn't look like constant variability is met since we observed fairly large variability at medium-range temperatures and lower variability at high and low temps. Let's run a quick Brusch-Pagan test:
+
+```{r}
+library(lmtest)
+bptest(mod.rider)
+```
+
+Hmm, it looks like we have a small heteroskedasticity problem, since $p < 0.05$. Let's move on for now, but strategies you might use include transforming a variable (e.g., log), weighted regression, and in this case adding another variable might fix the problem (can you guess what?).
+
+One other thing:
+
+```{r}
+par(mfrow=c(2,2))
+plot(mod.rider)
+```
+
+is a shortcut to look at model diagnostics very quickly. How do these results compare with what we did above?
+
+## Outliers, leverage, influence
+
+**Outliers** are points that don't fit the trend in the rest of the data.
+
+**High leverage points** have the potential to have an unusually large influence 
+on the fitted model.
+
+**Influential points** are high leverage points that cause a very different
+line to be fit than would be with that point removed.
+
+## Influence measures
+
+Recall that there are numerous ways of assessing the influence that a given observation has on your model...
+
+* Do `?influence.measures` to see the full suite of influence measures in stats. The measures include
+  * `rstandard` - standardized residuals, residuals divided by their standard deviations)
+  * `rstudent` - standardized residuals, residuals divided by their standard deviations, where the ith data point was deleted in the calculation of the standard deviation for the residual to follow a t distribution
+  * `hatvalues` - measures of leverage
+  * `dffits` - change in the predicted response when the $i^{th}$ point is deleted in fitting the model.
+  * `dfbetas` - change in individual coefficients when the $i^{th}$ point is deleted in fitting the model.
+  * `cooks.distance` - overall change in the coefficients when the $i^{th}$ point is deleted.
+  * `resid` - returns the ordinary residuals
+  * `resid(fit) / (1 - hatvalues(fit))` where `fit` is the linear model fit returns the PRESS residuals, i.e. the leave one out cross validation residuals - the difference in the response and the predicted response at data point $i$, where it was not included in the model fitting.
+
+## Find Outliers
+
+### Standardized Residuals
+
+One of the more common tools is standardized residuals. Standardized residuals are essentially "z-score residuals", so if you are using a $95%$ confidence level, you can take a quick look to see if any standardized residuals are greater than 2 (or 1.96) or less than -2 (-1.96):
+
+```{r standardized, eval=TRUE}
+par(mfrow=c(1,1))
+plot(rstandard(mod.rider)~ RailTrail$hightemp)
+abline(h = 2, lty = 3,col='red')  # adds a horizontal dashed line at y = 2
+abline(h = -2, lty = 3,col='red')  # adds a horizontal dashed line at y = 2
+```
+
+9. How do your standardized residuals look? How many points would you expect to be outside of the dashed lines *simply due to random chance* (hint: what does the $95%$ interval really mean)?
+
+This looks pretty good. We have 90 obs, so we would expect 4 observations or so to have outlying residuals. 
+
+
+### Studentized Residuals
+
+Studentized residuals are just like standardized residuals, but we leave out a given point when computing the sd. That way, the very point you are trying to analzye does not factor into the standardization. In all likelihood, in most cases you won't notice much difference between the two. 
+
+```{r studentized, eval=TRUE}
+plot(rstudent(mod.rider)~ RailTrail$hightemp)
+abline(h = 2, lty = 3,col='red')  # adds a horizontal dashed line at y = 2
+abline(h = -2, lty = 3,col='red')  # adds a horizontal dashed line at y = 2
+```
+
+10. Comment on any observed differences between the studentized and standardized residuals.
+
+As you might expect, there is not much difference. 
+
+## Assess Leverage
+
+We can assess leverage by plotting hatvalues....
+```{r eval=TRUE}
+hat <- hatvalues(mod.rider)
+plot(hat)
+```
+
+##Measure influence
+dfbetas and Cook's Distance are both common ways to measure influence:
+
+**dfbetas** are the difference in $\beta_k$ when observation $i$ is left out of the model. We care about how each point influences $\beta_1$ in this case, not $\beta_0$, so we'll only plot the second column of results. 
+
+```{r eval=TRUE}
+modbetas = dfbetas(mod.rider)
+plot(modbetas[,2])
+```
+
+
+**Cook's Distance** is an alternative measure. Cook's Distance is a summary metric that captures the total change in all model parameters due to a given observation. For this reason, there is no absolute standard of waht is a "large" or "small" Cook's distance. The most general criteria is that a point is highly influential when $D_i>1$. However, the number of observations obviously directly influences the influence any one point can have independent of the values of the observation, so $D_i > 4/n$ is also a common criteria.
+
+```{r eval=TRUE}
+modcooks = cooks.distance(mod.rider)
+plot(modcooks)
+abline(h=4/nrow(RailTrail),col='red')
+```
+
+11. Comment on the dfbeta and Cook's Distance results. What do you think might be driving some of these influential points?
+
+It does appear that there are a few influential points that serve to change the coefficient estimate. In particular, there are several observations that pull the coefficient down quite significantly. My hunch is that these are rainy days where nobody wanted to rider their bike. 
+
+## Combinging Leverage, Outliers, and Influence
+
+###Bubble Plot
+It's tought to know how useful a bubble plot is, but it's fun to make!
+
+```{r}
+plot(hatvalues(mod.rider), rstudent(mod.rider), type='n')
+cook <- sqrt(cooks.distance(mod.rider))
+points(hatvalues(mod.rider), rstudent(mod.rider), cex=10*cook/max(cook))
+abline(h=c(-2,0,2), lty=2)
+abline(v=c(2,3) * 3/45, lty=2)
+```
+
+# What might we do?
+
+**robust regression** downweights influential data 
+
+```{r}
+library(MASS)
+mod.rider.robust = rlm(volume~hightemp,data=RailTrail)
+summary(mod.rider.robust)
+```
+
+You could also **delete** problem points, but **I would strongly recommend avoiding this if at all possible, unless you know with great confidence that a data point is an error and not simply an outlying observation**.
+
+```{r}
+library(MASS)
+mod.rider.delete = lm(volume~hightemp,data=RailTrail[cooks.distance(mod.rider)<=4/nrow(RailTrail),])
+summary(mod.rider.delete)
+```
+
+12. Compare your three models (basic, robust, and point-deletion) - how and why do they differ? Also, how many points did you delete in the deletion model?
+
+
+```{r}
+library(texreg)
+screenreg(list(mod.rider,mod.rider.robust,mod.rider.delete))
+```
+
+
+Fairly similar results, but looks like we have alleviated the issue where those few (potentially) rainy days pulls the coefficient downwards. The deletion procedure model has a MUCH higher coefficient, but again, we probably don't want this - those data still matter (unless you think it will never rain again or something). 
+
+
+# Multiple regression diagnostics
+
+Residual plots are somewhat problematic for multiple regression, because we have many different input varaibles. Instead, we will use "added variable plots"
+
+### Residual plots, bivariate regression vs multiple regression
+
+In simple linear regression we use residual plots to assess:
+
+1. Does the mean function appear linear?
+2. Is it reasonable to assume that the errors have constant variance?
+
+##  Residual plots in multiple regression
+
+We fit the model:
+
+\[ y \sim x_1 + x_2 \]
+
+```{r echo=TRUE,message=FALSE, error=FALSE}
+library(alr3)  #package that accompanies S. Weisberg, Applied Regression Regression, Third Edition, Wiley, 2005
+data(caution)
+m1 <- lm(y~x1+x2, data = caution)
+plot(m1, 1)
+```
+
+If this was a bivariate model, we could conclude that the mean function looks fairly linear but there the errors appear to have increasing variance. However, these are **fake data generated from a model with constant variance**!!!
+
+```{r echo=TRUE}
+StanRes1 <- rstandard(m1)
+plot(caution$x1,StanRes1, ylab="Standardized Residuals")
+```
+
+```{r echo=TRUE}
+plot(caution$x2,StanRes1, ylab="Standardized Residuals")
+```
+
+
+In MLR, in general, you **cannot infer** the structure you see in the residuals
+vs. fitted plot as being the structure that was misspecified.
+
+- Non-constant variance in the residuals doesn't neccessarily suggest 
+non-constant variance in the errors.
+- Non-linear structures don't necessarily suggest a non-linear mean function.
+
+The only conclusion you can draw is that *something* is misspecified.
+
+### Diagnostic Plots for Multiple Regression
+
+So now what?
+
+- Although several types of invalid models can create non-constant variance
+in the residuals, a valid model will always be structureless.
+
+- If you can be sure you have a good mean function, then the residual plot
+is more informative.
+
+1. *Added Variable Plots*: Used to assess a variable's impact net of other model variables
+2. *$Y$ versus $\hat{Y}$*: used to assess whether the mean function is being 
+modeled well.
+3. *Marginal model plots*: used to assess whether the mean function between
+each predictor and the response is being modeled well.
+
+
+# Added variable plots
+
+The objective of constructing an added variable plot is to assess how much
+each variable adds to your model.
+
+Consider the some data concerning restaurants in NYC, where we'd like to build the model:
+
+\[ Price \sim Food + Decor + Service + East \]
+
+We can assess the isolated effect of each predictor on the response with a 
+series of simple scatterplots...
+
+```{r echo=TRUE, fig.align='center', fig.height=6}
+nyc <- read.csv("http://andrewpbray.github.io/data/nyc.csv")
+par(mfrow=c(2,2))
+plot(Price ~ Food, data = nyc)
+abline(lsfit(nyc$Food,nyc$Price))
+plot(Price ~ Decor, data = nyc)
+abline(lsfit(nyc$Decor,nyc$Price))
+plot(Price ~ Service, data = nyc)
+abline(lsfit(nyc$Service,nyc$Price))
+plot(Price ~ East, data = nyc)
+abline(lsfit(nyc$East,nyc$Price))
+```
+
+This might be more efficient...
+
+```{r fig.align='center', fig.height=6}
+pairs(Price ~ Food + Decor + Service + East, data = nyc)
+```
+
+But this does not provide a way to look at a variable *net of other variables*. Instead, an **added variable plot** tells you how much a given predictor $x_i$ can explain the response
+after the other predictors have been taken into account.  An "av-plot" has:
+
+- On the y-axis, the residuals from the model predicting the response without $x_i$.
+
+- On the x-axis, the residuals from predicting $x_i$ using those same predictors.
+
+### Making an avplot by hand
+
+First, get the residuals from the model
+
+\[ Price \sim Decor + Service + East \]
+
+```{r}
+resY <- lm(Price ~ Decor + Service + East, data = nyc)$res
+```
+
+Second, get the residuals from the model
+
+\[ Food \sim Decor + Service + East \]
+
+```{r}
+resX <- lm(Food ~ Decor + Service + East, data = nyc)$res
+```
+
+The plot them against each other...
+
+```{r fig.align='center', fig.height=5}
+plot(resY ~ resX)
+```
+
+
+## Making an avplot in 2 seconds...
+
+The `car` package has an `avPlots()` function that does this for you...
+
+```{r fig.align='center', fig.height=5}
+library(car)
+m1 <- lm(Price ~ Food + Decor + Service + East, data = nyc)
+avPlot(m1,variable = "Food")
+```
+
+```{r fig.align='center', fig.height=5}
+avPlots(m1)
+```
+
+Notice that if we fit a line through the AVP, the slope should look familiar...
+
+```{r}
+AVPm1 <- lm(resY ~ resX)
+AVPm1$coef
+m1$coef
+```
+
+### How to use AVPs
+
+1. AVPs can be used to assess whether it makes sense to include an additional
+variable in the model (similar to looking at the p-value of the predictor).
+
+2. They're a bit more informative, though, since they would also indicate if the
+relationship between that predictor and the response is linear in the context of
+the other variables.
+
+## Multiple Regression Practice
+
+
+Let's look at home prices in LA...
+
+```{r echo = TRUE, fig.align='center'}
+LA <- read.csv("http://andrewpbray.github.io/data/LA.csv")
+plot(price ~ sqft, data = LA, col = "steelblue")
+```
+
+In the data set LA, this scatterplot suggests two influential points but are
+they influential in a multiple regression model?
+
+15. Fit the model $\hat{price} \sim sqrt + bed + city$. By the rules of thumb, are those two points high leverage?  Outliers?
+(you can extract the hat values using `influence(m1)$hat`.)
+
+```{r}
+mod.la = lm(price ~ sqft + bed + city,data=LA)
+summary(mod.la)
+```
+
+```{r}
+hat <- hatvalues(mod.la)
+plot(hat)
+```
+
+Definitely something funny going on here.
+
+#### High leverage?
+
+```{r}
+levs <- influence(m1)$hat
+hist(levs,breaks=100)
+abline(v = 2 * length(m1$coef) / nrow(LA), col = "red")
+tail(sort(levs))
+```
+
+#### High residual?
+
+```{r}
+e_hat <- m1$res
+s <- sqrt(1/(nrow(LA) - length(m1$coef)) * sum(e_hat^2))
+r <- e_hat/(s * sqrt(1 - levs))
+hist(r)
+tail(sort(r))
+```
+
+Yes, very high.
+
+
+#### Influence
+
+```{r}
+cdist <- (r^2 / length(m1$coef)) * (levs/(1 - levs))
+tail(sort(cdist))
+plot(m1, 5)
+```
+
+Yep, highly influential as well.
+
+16. Calculate the Cook's distance of those two observations.
+
+```{r}
+modcooks = cooks.distance(mod.la)
+tail(sort(modcooks))
+```
+
+17. Generate the Cook's distance plot. 
+
+```{r}
+plot(modcooks)
+abline(h=1,col='red')
+table(modcooks > 1)
+```
+
+Note that we us 1 here instead of 4/nrow(n) because the sample is much larger. If we were to use 4/nrow(n), the heuristic would be `r 4/nrow(LA)`, and basically every observation would qualify.
+
+#### AV Plots
+```{r}
+library(car)
+avPlots(m1)
+```
+
+
+18. Now fit the more appropriate model, with $logprice$ and $logsqrt$ and construct added variable plots.  What do you learn about the relative usefulness of $logsqft$ and $bed$ as predictors?
+
+```{r}
+library(dplyr)
+LA <- mutate(LA, logprice = log(price), logsqft = log(sqft))
+m2 <- lm(logprice ~ logsqft + bed + city, data = LA)
+summary(m2)
+avPlots(m2)
+```
+
+Overall, this model should look quite a bit better.
+```{r}
+par(mfrow=c(2,2))
+plot(m2)
+```
+
+# Marginal Model Plots
+
+### Example: Defective widgets
+
+<img src="http://www.epa.gov/recyclecity/images/factory.png" height="500px" width="700px" />
+
+```{r}
+defects <- read.table("http://www.stat.tamu.edu/~sheather/book/docs/datasets/defects.txt",
+                      header = TRUE)
+head(defects)
+```
+
+Let's look at the pairwise comparisons...
+
+```{r}
+pairs(Defective ~ Temperature + Density + Rate, data = defects)
+```
+
+Here's our basic model...
+
+\[ \widehat{Defective} \sim Temperature + Density + Rate \]
+
+```{r, echo=TRUE}
+m1 <- lm(Defective ~ Temperature + Density + Rate, data = defects)
+summary(m1)$coef
+```
+
+View a summary of model diagnostics:
+```{r, echo=FALSE, fig.align='center', fig.height=6, fig.width=6.5}
+par(mfrow = c(2, 2))
+plot(m1)
+```
+
+View residuals plotted against each covariate...
+
+```{r, echo=TRUE, fig.align='center', fig.height=6, fig.width=6.5}
+par(mfrow = c(2, 2))
+r <- rstandard(m1)
+plot(r ~ defects$Temperature)
+plot(r ~ defects$Density)
+plot(r ~ defects$Rate)
+```
+
+## $Y$ versus $\hat{Y}$
+
+Used to assess whether your model is doing a good job of modeling the response. 
+If it is, you'll see points along the identity line.  If it's not, there will be
+non-linear structure try to correct by transforming the response and assess on a
+predictor-by-predictor basis using *marginal model plots*.
+
+```{r, echo=FALSE, fig.align='center', fig.height=5.5, fig.width=5.5}
+plot(defects$Defective ~ m1$fit)
+abline(0, 1)
+```
+
+The standardized residual plots and the plot of $y$ on $\hat{y}$ suggest that 
+something is amiss, but what?  We need to be sure that the structure in the 
+*data* is being mirrored well by the structure in our *model*.  This comparison
+is made for each predictor using the **marginal model plot**.
+
+**Marginal Model Plots** are used to assess the marginal relationship between each predictor and the response.
+-It compares the fit from the model with the nonparametric fit to the scatterplot.
+-If your model is well-specified, these two lines will be close to coincident.
+
+You can build them by hand using `loess()` or use `mmp()` in the `car` package.
+
+Now, load the `car` package (if you haven't already) and produce the marginal model plots...
+
+```{r, echo=TRUE, fig.align='center', fig.height=6}
+par(mfrow=c(2, 2))
+library(car)
+mmp(m1, defects$Temperature)
+mmp(m1, defects$Density)
+mmp(m1, defects$Rate)
+```
+
+Or you can use `loess` to make these by hand:
+
+```{r, echo=TRUE, fig.align='center', fig.height=5.5, fig.width=5.5}
+plot(Defective ~ Temperature, data = defects)
+lines(sort(defects$Temperature), sort(m1$fit), lwd = 2)
+l1 <- loess(m1$fit ~ defects$Temperature)
+lines(sort(l1$x), sort(l1$fit), lwd = 2, col = "red", lty = 2)
+```
+
+```{r, echo=TRUE, fig.align='center', fig.height=5.5, fig.width=5.5}
+plot(Defective ~ Temperature, data = defects)
+lines(sort(defects$Temperature), sort(m1$fit), lwd = 2)
+l1 <- loess(m1$fit ~ defects$Temperature)
+lines(sort(l1$x), sort(l1$fit), lwd = 2, col = "red", lty = 2)
+l2 <- loess(Defective ~ Temperature, data = defects)
+lines(sort(l2$x), sort(l2$fit), lwd = 2, col = "blue", lty = 2)
+```
+
+### An alternative model
+
+\[ \widehat{\sqrt{Defective}} \sim Temperature + Density + Rate  \]
+
+```{r}
+defects <- transform(defects, sqrtDefective = sqrt(Defective))
+m2 <- lm(sqrtDefective ~ Temperature + Density + Rate, data = defects)
+summary(m2)$coef
+```
+
+Marginal model plots for second model
+```{r, echo=FALSE, fig.align='center', fig.height=6}
+par(mfrow = c(2, 2))
+mmp(m2, defects$Temperature)
+mmp(m2, defects$Density)
+mmp(m2, defects$Rate)
+```
+
+### Comparing m1 and m2
+
+How do these look?
+
+```{r, echo=FALSE, fig.align='center', fig.height=4.75, fig.width=8.5}
+par(mfrow = c(1, 2))
+plot(defects$Defective ~ m1$fit)
+plot(defects$sqrtDefective ~ m2$fit)
+```
+
+## Recap: MMP vs AVP
+
+- **Marginal model plots**: are useful in checking to see that you're doing a good
+job of modeling the marginal relationship between a given predictor and the response.
+- **Added variable plots**: assess how much variation in the response can be 
+explained by a given predictor after the other predictors have already been taken
+into account (links to p-values).
+
+# Goal check?
+
+# Questions?
+
+
+
+
+
+

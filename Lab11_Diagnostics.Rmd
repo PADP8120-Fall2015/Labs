@@ -72,7 +72,7 @@ mod.rider <- lm(volume~hightemp,data=RailTrail)
 4. Describe the estimated relationship between `volume` of ridership and the high temperature 
 `hightemp`.
 
-5. Generate and examine the residual plots.  Do the conditions for regression appear reasonable?
+Test whether the conditions for regression appear reasonable:
 
 ## Condition 1: Linearity
 
@@ -402,19 +402,8 @@ m1 <- lm(price ~ sqft + bed + city, data = LA)
 In the data set LA, this scatterplot suggests two influential points but are
 they influential in a multiple regression model?
 
-14. Fit the model $\hat{price} \sim sqrt + bed + city$.
-
-15. By the rules of thumb, are those two points high leverage?  Outliers?
+15. Fit the model $\hat{price} \sim sqrt + bed + city$. By the rules of thumb, are those two points high leverage?  Outliers?
 (you can extract the hat values using `influence(m1)$hat`.)
-
-16. Calculate the Cook's distance of those two observations.
-
-17. Generate the Cook's distance plot. 
-
-18. Now fit the more appropriate model, with $logprice$ and $logsqrt$ and construct
-added variable plots.  What do you learn about the relative usefulness of $logsqft$
-and $bed$ as predictors?
-
 
 #### High leverage?
 
@@ -467,14 +456,32 @@ tail(sort(cdist))
 plot(m1, 5)
 ```
 
+16. Calculate the Cook's distance of those two observations.
 
-#### AVPs
+
+17. Generate the Cook's distance plot.
+
+18. Look at the avplots:
+#### AV Plots
+```{r}
+library(car)
+avPlots(m1)
+```
+
+18. Now fit the more appropriate model, with $logprice$ and $logsqrt$ and construct added variable plots.  What do you learn about the relative usefulness of $logsqft$ and $bed$ as predictors?
 
 ```{r}
-LA <- transform(LA, logprice = log(price), logsqft = log(sqft))
+library(dplyr)
+LA <- mutate(LA, logprice = log(price), logsqft = log(sqft))
 m2 <- lm(logprice ~ logsqft + bed + city, data = LA)
-library(car)
+summary(m2)
 avPlots(m2)
+```
+
+Overall, this model should look quite a bit better.
+```{r}
+par(mfrow=c(2,2))
+plot(m2)
 ```
 
 
