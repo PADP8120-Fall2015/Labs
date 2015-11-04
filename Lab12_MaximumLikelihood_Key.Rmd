@@ -101,11 +101,11 @@ $\begin{bmatrix}
 
 2. What size is the first matrix?
 
-2 x 3
+3 x 2
 
 3. What size is the second matrix?
 
-3 x 2
+2 x 3
 
 4. Can they multiplied together?  If so, what will be the size of the result.
 
