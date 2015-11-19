@@ -1,0 +1,276 @@
+---
+title: "Lab 14: Dummys and Categories"
+author: "Tyler Scott"
+date: "2015-08-16 ![Creative Commons Attribution License](images/cc-by.png)"
+output:
+  html_document:
+    highlight: pygments
+    theme: cerulean
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
+---
+
+
+
+## {.smaller}
+
+** Inspiration for this lab comes from the work of Jonathan Tannen 
+
+## Goals for Today   
+
+1. Dummy regression.  
+2. Interactions.  
+3. Presenting results.  
+
+## “UN Data on Life Expectancy.”  {.smaller}
+
+- Load the dataset from Fox:  
+- http://socserv.socsci.mcmaster.ca/jfox/Books/Applied-Regression-2E/dataset/UnitedNations.txt  
+- More info on dataset: http://socserv.socsci.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/UnitedNations.pdf
+- Explore the dataset.  
+- Make some plots of Life Expectancy. Anything interesting?  
+
+```{r, eval=TRUE}
+library(ggplot2)
+library(dplyr)
+df <-read.table("http://socserv.socsci.mcmaster.ca/jfox/Books/Applied-Regression-2E/datasets/UnitedNations.txt")
+df$country <- rownames(df)
+rownames(df) <- NULL
+df <- tbl_df(df)
+df
+```
+
+## Male and Female Life Expectancy
+
+1. Describe the difference between Male and Female Life Expectancy using statistics.
+
+```{r}
+df %>% summarise_each(funs(mean(.,na.rm=T)),lifeMale,lifeFemale)
+```
+
+```{r}
+t.test(df$lifeMale,df$lifeFemale)
+```
+
+
+2. Describe the difference between Male and Female Life Expectancy visually. (Challenge yourself to keep adding information!)
+
+```{r}
+ggplot(data=df,aes(x=1:nrow(df),y=lifeFemale-lifeMale))+  geom_point(show_guide = FALSE) +
+  theme_bw() + 
+  theme(axis.ticks.x=element_blank(),
+        axis.title.x=element_blank())+
+  scale_y_continuous(name='Difference in Female/Male Life Expectancy',limits=c(-15,15)) 
+```
+
+3. Describe the difference between Male and Female Life Expectancy by region using statistics. (What kind of variable is ‘region’?)
+
+```{r}
+df %>% group_by(region) %>% 
+  summarise(Avg.Regional.Difference = mean(lifeFemale-lifeMale,na.rm=T))
+```
+
+4. Add region information to your plot.
+
+```{r}
+ggplot(data=df,aes(x=region,label=region,y=lifeFemale-lifeMale,colour=region))+  geom_point(show_guide = FALSE) +
+  theme_bw() + 
+  theme(axis.ticks.x=element_blank(),
+        axis.title.x=element_blank())+
+  scale_y_continuous(name='Difference in Female/Male Life Expectancy',limits=c(-15,15)) +
+  scale_colour_brewer(name='Region',type='qual',palette=2)
+```
+
+5. Challenge: Redo the plot, but try adding the country names instead of points.
+
+```{r}
+ggplot(data=df,aes(x=region,label=country,y=lifeFemale-lifeMale,colour=region))+  geom_text(show_guide = FALSE) +
+  theme_bw() + 
+  theme(axis.ticks.x=element_blank(),
+        axis.title.x=element_blank())+
+  scale_y_continuous(name='Difference in Female/Male Life Expectancy',limits=c(-5,15)) +
+  scale_colour_brewer(name='Region',type='qual',palette=2)
+```
+
+## Comparing Regions 
+
+1. Create a dummy for European countries.  
+
+```{r}
+df$Europe = ifelse(df$region=='Europe',1,0)
+```
+
+2. Create a dummy for non-European countries. 
+
+```{r}
+df$Not.Europe = ifelse(df$region=='Europe',0,1)
+```
+
+3. Regress female life expectancy on the europe dummy. Regress female life expectancy on the non-europe dummy. What do you notice?  
+
+```{r}
+summary(lm(lifeFemale~Europe,data=df))
+summary(lm(lifeFemale~Not.Europe,data=df))
+```
+
+4. Regress female life expectancy on ‘region’. Interpret the results.  
+
+```{r}
+summary(lm(lifeFemale~region,data=df))
+```
+
+
+## Life Expectancy and GDP
+
+1. Plot female life expectancy and female education (with region colors). 
+
+```{r}
+ggplot(df,aes(x=educationFemale,y=lifeFemale,colour=region)) +
+  geom_point() + theme_bw() +
+  theme(legend.position = c(0.65,0.1),
+        legend.direction='horizontal') +
+  scale_colour_brewer(name='Region',palette=2,type='qual')+
+  scale_y_continuous('Female Life Expectancy')+
+  scale_x_continuous('Female Education')
+```
+
+
+2. Regress female life expectancy on female education. Interpret the results. Plot the regression line. 
+
+```{r}
+mod1 = lm(lifeFemale~educationFemale,data=df)
+summary(mod1)
+```
+
+```{r}
+ggplot(df,aes(x=educationFemale,y=lifeFemale,colour=region)) +
+  geom_point() + theme_bw() +
+  theme(legend.position = c(0.65,0.1),legend.direction='horizontal') +
+ scale_colour_brewer(name='Region',palette=2,type='qual')+
+  scale_y_continuous('Female Life Expectancy')+
+  scale_x_continuous('Female Education') + 
+   geom_abline(aes(intercept=coef(mod1)[1],slope=coef(mod1)[2]))
+```
+
+3. Regress female life expectancy on female education and the Europe dummy. Interpret each. Plot the regression lines.
+
+```{r}
+mod2 = lm(lifeFemale~educationFemale+Europe,data=df)
+summary(mod2)
+```
+
+```{r}
+ggplot(df,aes(x=educationFemale,y=lifeFemale,colour=as.factor(Europe))) +
+  geom_point() + theme_bw() +
+  theme(legend.position = c(0.65,0.1),legend.direction='horizontal') +
+ scale_colour_brewer(name='In Europe',palette=2,type='qual')+
+  scale_y_continuous('Female Life Expectancy')+
+  scale_x_continuous('Female Education') + 
+  geom_smooth(method='lm')
+```
+
+4. Regress female life expectancy on female education, only for European countries. Plot the regression line.    
+
+```{r}
+mod3 = lm(lifeFemale~educationFemale,data=df[df$Europe==1,])
+summary(mod3)
+```
+
+```{r}
+ggplot(df[df$Europe==1,],aes(x=educationFemale,y=lifeFemale,colour=as.factor(Europe))) +
+  geom_point() + theme_bw() +
+  theme(legend.position = c(0.65,0.1),legend.direction='horizontal') +
+ scale_colour_brewer(name='In Europe',palette=2,type='qual')+
+  scale_y_continuous('Female Life Expectancy')+
+  scale_x_continuous('Female Education') + 
+  geom_smooth(method='lm')
+```
+
+5. Regress female life expectancy on female education, only for American countries. Plot the regression line.   
+
+```{r}
+mod4 = lm(lifeFemale~educationFemale,data=df[df$region=='America',])
+summary(mod4)
+```
+
+```{r}
+ggplot(df[df$region=='America',],aes(x=educationFemale,y=lifeFemale,colour=as.factor(Europe))) +
+  geom_point() + theme_bw() +
+  theme(legend.position = c(0.65,0.1),legend.direction='horizontal') +
+ scale_colour_brewer(name='In Europe',palette=2,type='qual')+
+  scale_y_continuous('Female Life Expectancy')+
+  scale_x_continuous('Female Education') + 
+  geom_smooth(method='lm')
+```
+
+
+6. Regress female life expectancy on female education, Europe, and the interaction between the two. Plot the regression lines.
+
+```{r}
+mod5 = lm(lifeFemale~educationFemale + Europe + educationFemale:Europe,data=df)
+summary(mod5)
+```
+
+```{r}
+ggplot(df,aes(x=educationFemale,y=lifeFemale,colour=as.factor(Europe))) +
+  geom_point()
+
+base.ed = coef(mod5)[1] + coef(mod5)[2]*(1:20)
+europe.ed = coef(mod5)[1] + coef(mod5)[2]*(1:20) + coef(mod5)[3] * 1 + coef(mod5)[4] * 1 * (1:20)
+
+ests = data.frame(y.hat = c(base.ed,europe.ed),Europe = rep(c(0,1),each=20),Education = rep(1:20,2))
+
+ggplot()  + geom_line(aes(x=Education,y=y.hat,colour=as.factor(Europe),group=Europe),size=2,data=ests) +
+  theme_bw() + theme(legend.position = c(0.8,0.25)) +
+  scale_colour_brewer(name='',label=c('Non-European','European'),type='qual',palette=2) +
+  geom_point(data=df,aes(x=educationFemale,y=lifeFemale,colour=as.factor(Europe))) +
+  ylab('Female Life Expectancy') + xlab('Average Years of Female Education')
+
+```
+
+## Life Expectancy and GDP
+
+- Regress female life expectancy on female education and all region dummies. Interpret each. 
+
+```{r}
+mod6 = lm(lifeFemale~region,data=df)
+summary(mod6)
+```
+
+In this case, Africa is the reference category. Thus, the model predicts that relative to Africa a country in the Americas is predicted to have 19.04 years greater female life expectancy. 
+
+
+- Regress female life expectancy on every region dummy interacted with female education.  Interpret every term.  
+
+```{r}
+mod7 = lm(lifeFemale ~ region*educationFemale,data=df)
+summary(mod7)
+```
+
+Because each region is essentially its own dummy variable, what we are really fitting is a separate slope for female education within each region. For instance, the predicted association between female education and female life expectancy in the Americas is that a one year increase in average female education predicts a `r round(coef(mod7)[6])` + `r round(coef(mod7)[7])` =  `r round(coef(mod7)[6])+round(coef(mod7)[7])` year change in female life expectancy. 
+
+
+- Put this information on your scatter plot. (Think hard about the most intuitive way to present it!)  
+
+```{r}
+coef.df = data.frame(Region.Intercept = c(coef(mod7)[1],coef(mod7)[1]+coef(mod7)[2:5]),
+                     Region.Slope = c(coef(mod7)[6],coef(mod7)[6]+coef(mod7)[7:10]),
+                     Region = c('Africa','America','Asia','Europe','Oceana'))
+
+ggplot() + geom_point(data=df,aes(y=lifeFemale,x=educationFemale,colour=region)) +
+  geom_abline(aes(intercept=Region.Intercept,slope=Region.Slope,colour=Region),data=coef.df) +
+  theme_bw() + theme(legend.position=c(0.7,0.1),legend.direction='horizontal') +
+  scale_colour_brewer('Region',palette=2,type='qual') + 
+  ylab('Female Life Expectancy') +
+  xlab('Female Education')+ scale_y_continuous(limits=c(40,100))
+
+```
+
+```{r}
+ggplot(df,aes(y=lifeFemale,x=educationFemale,colour=region)) + geom_point() + geom_smooth(aes(group=region),method='lm') +
+  theme_bw() + theme(legend.position=c(0.7,0.1),legend.direction='horizontal') +
+  scale_colour_brewer('Region',palette=2,type='qual') + 
+  ylab('Female Life Expectancy') +
+  xlab('Female Education') + scale_y_continuous(limits=c(40,100))
+```
+
+

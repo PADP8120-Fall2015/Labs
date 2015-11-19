@@ -1,18 +1,17 @@
 ---
 title: "Lab 14: Dummys and Categories"
 author: "Tyler Scott"
-date: "2015-07-128 ![Creative Commons Attribution License](images/cc-by.png)"
-output: 
-  ioslides_presentation:
-    css: soc504_s2015_slides.css
+date: "2015-08-16 ![Creative Commons Attribution License](images/cc-by.png)"
+output:
+  html_document:
+    highlight: pygments
+    theme: cerulean
+widgets     : [mathjax]            # {mathjax, quiz, bootstrap}
 ---
 
 
+
 ## {.smaller}
-
-
-<br><br> <br> <br> <br><br> <br> <br> <br><br> <br> <br> 
-<br> <br><br> <br> <br>    
 
 ** Inspiration for this lab comes from the work of Jonathan Tannen 
 
@@ -54,7 +53,7 @@ df
 2. Create a dummy for non-European countries. 
 3. Regress female life expectancy on the europe dummy. Regress female life expectancy on the non-europe dummy. What do you notice?  
 4. Regress female life expectancy on ‘region’. Interpret the results.  
-5. Challenge: Do Europe and America have the same mean female life expectancy?  
+
 
 ## Life Expectancy and GDP
 
@@ -67,8 +66,6 @@ df
 
 
 ## Life Expectancy and GDP
-
-Ambitious:  
 
 - Regress female life expectancy on female education and all region dummies. Interpret each.    
 - Regress female life expectancy on every region dummy interacted with female education.  Interpret every term.  
