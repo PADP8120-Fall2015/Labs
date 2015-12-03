@@ -141,8 +141,8 @@ for a variable at its mean and at its mean plus one standard deviation, holding
 all other variables at their means (if continuous), and their 
 ```{r}
 year_seq <- seq(min(rossdata$year), max(rossdata$year), by = 1)
-oil_lo <- mean(rossdata$GDPcap)
-oil_hi <- mean(rossdata$GDPcap) + sd(rossdata$GDPcap)
+oil_lo <- mean(rossdata$oil)
+oil_hi <- mean(rossdata$oil) + sd(rossdata$oil)
 pred3_oil_lo <-
   predict(model3,
           newdata = data.frame(year = year_seq,
